@@ -8,6 +8,7 @@ from Graph import *
 from algorithms import *
 import itertools
 import random
+from vc_problem import *
 
 
 def create_random_graph(num_of_vertices):
@@ -35,11 +36,11 @@ def create_random_graph(num_of_vertices):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # new_graph = create_random_graph(10)
-    new_graph = Graph()
-    new_graph.create_p_random_graph(100, 0.05)
-    vertex_cover = two_approximate_vertex_cover(new_graph)
-    print(vertex_cover)
-    new_graph.draw_vertex_cover(vertex_cover)
-
-
+    # new_graph = Graph()
+    # new_graph.create_p_random_graph(100, 0.05)
+    # vertex_cover = two_approximate_vertex_cover(new_graph)
+    # print(vertex_cover)
+    # new_graph.draw_vertex_cover(vertex_cover)
+    graph = Graph([frozenset({1, 2}), frozenset({1, 3}), frozenset({1, 4})], [1, 2, 3, 4])
+    problem = VC_Problem(graph, [1, 2])
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
