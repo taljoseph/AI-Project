@@ -10,7 +10,9 @@ class Graph:
     This class represents a Graph
     """
 
-    def __init__(self, edges_list: List[FrozenSet[int]], vertex_list: List[int], neighbors: Dict[int, Set[int]]):
+    def __init__(self, edges_list: List[FrozenSet[int]] = None,
+                 vertex_list: List[int] = None,
+                 neighbors: Dict[int, Set[int]] = None):
         """
         :param edges_list: a list of the edges in the graph - (u,v)
         :param vertex_list: a list of the vertices in the graph
@@ -18,9 +20,9 @@ class Graph:
          neighbors
         """
         self._edges = edges_list
-        self._num_edges = len(edges_list)
+        self._num_edges = 0 if edges_list is None else len(edges_list)
         self._vertices = vertex_list
-        self._num_vertices = len(vertex_list)
+        self._num_vertices = 0 if vertex_list is None else len(vertex_list)
         self._neighbors = neighbors
 
     def get_edges(self):
@@ -47,7 +49,6 @@ class Graph:
     def get_num_edges(self):
         return self._num_edges
 
-
     def draw_vertex_cover(self, vertex_cover):
         """
         This function draws the graph such that vertices that are part of the vertex cover are colored in green,
@@ -69,3 +70,20 @@ class Graph:
         nx.draw(G, node_color=colors, with_labels=True)
         plt.show()
 
+    def create_p_random_graph(self, num_vertices: int, p: float):
+        vertices = [i for i in range(num_vertices)]
+        self._vertices = vertices
+        edges = []
+        neighbors = {}
+        for i in range(num_vertices):
+            for j in range(i + 1, num_vertices):
+                if random.random() < p:
+                    edges.append(frozenset({i, j}))
+                    if i not in neighbors:
+                        neighbors[i] = []
+                    if j not in neighbors:
+                        neighbors[j] = []
+                    neighbors[i].append(j)
+                    neighbors[j].append(i)
+        self._edges = edges
+        self._neighbors = neighbors

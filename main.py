@@ -34,7 +34,9 @@ def create_random_graph(num_of_vertices):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    new_graph = create_random_graph(10)
+    # new_graph = create_random_graph(10)
+    new_graph = Graph()
+    new_graph.create_p_random_graph(100, 0.05)
     vertex_cover = two_approximate_vertex_cover(new_graph)
     print(vertex_cover)
     new_graph.draw_vertex_cover(vertex_cover)
