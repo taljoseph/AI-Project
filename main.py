@@ -30,6 +30,7 @@ def create_random_graph(num_of_vertices):
     for neighbor in neighbors:
         print(neighbor)
         print(neighbors[neighbor])
+        print("")
     return Graph(edges_list, vertex_list, neighbors)
 
 
