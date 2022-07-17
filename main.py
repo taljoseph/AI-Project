@@ -5,6 +5,7 @@
 import copy
 
 from Graph import *
+from algorithms import *
 import itertools
 import random
 
@@ -18,7 +19,7 @@ def create_random_graph(num_of_vertices):
     vertex_list = []
     for i in range(num_of_vertices):
         vertex_list.append(i)
-    all_possible_edges = [{i, j} for i in range(len(vertex_list) - 1) for j in range(i + 1, len(vertex_list))]
+    all_possible_edges = [frozenset({i, j}) for i in range(len(vertex_list) - 1) for j in range(i + 1, len(vertex_list))]
     edges_list = random.sample(all_possible_edges, random.randint(1, len(all_possible_edges)))
     neighbors = dict()
     for vertex in vertex_list:
@@ -34,7 +35,7 @@ def create_random_graph(num_of_vertices):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     new_graph = create_random_graph(10)
-    vertex_cover = new_graph.two_approximate_vertex_cover()
+    vertex_cover = two_approximate_vertex_cover(new_graph)
     print(vertex_cover)
     new_graph.draw_vertex_cover(vertex_cover)
 

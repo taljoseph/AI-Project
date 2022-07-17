@@ -14,7 +14,7 @@ def two_approximate_vertex_cover(graph: Graph):
         vertex1, vertex2 = edge[0], edge[0]
         vertex_cover.append(vertex1)
         vertex_cover.append(vertex2)
-        edges_to_remove = {{vertex1, v} for v in neighbors[vertex1]}
-        edges_to_remove |= {{vertex2, v} for v in neighbors[vertex2]}
+        edges_to_remove = {frozenset({vertex1, v}) for v in neighbors[vertex1]}
+        edges_to_remove |= {frozenset({vertex2, v}) for v in neighbors[vertex2]}
         remaining_edges -= edges_to_remove
     return vertex_cover

@@ -1,7 +1,7 @@
 import networkx as nx
 import random
 import matplotlib.pyplot as plt
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, FrozenSet, Tuple
 from copy import deepcopy
 
 
@@ -10,7 +10,7 @@ class Graph:
     This class represents a Graph
     """
 
-    def __init__(self, edges_list: List[Set[int]], vertex_list: List[int], neighbors: Dict[int, Set[int]]):
+    def __init__(self, edges_list: List[FrozenSet[int]], vertex_list: List[int], neighbors: Dict[int, Set[int]]):
         """
         :param edges_list: a list of the edges in the graph - (u,v)
         :param vertex_list: a list of the vertices in the graph
@@ -29,7 +29,7 @@ class Graph:
     def get_vertices(self):
         return self._vertices
 
-    def set_edges(self, new_edges: List[Set[int]]):
+    def set_edges(self, new_edges: List[FrozenSet[int]]):
         self._edges = new_edges
 
     def set_vertices(self, new_vertices: List[int]):
