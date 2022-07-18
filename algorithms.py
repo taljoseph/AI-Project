@@ -2,7 +2,8 @@ import math
 
 from Graph import *
 
-def two_approximate_vertex_cover(graph: Graph):
+
+def two_approximate_vertex_cover(graph: Graph) -> List[int]:
     """
     This function finds a vertex cover using the 2-approximation algorithm
     :return: a list of vertices that are a vertex cover
@@ -20,7 +21,12 @@ def two_approximate_vertex_cover(graph: Graph):
         remaining_edges -= edges_to_remove
     return vertex_cover
 
-def greedy_hill_climbing(graph : Graph, initial_state : List[int]):
+
+def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    This function finds a vertex cover using the greedy hill climbing algorithm
+    return: a list of vertices that are a vertex cover
+    """
     cur_state = initial_state
     #adding neighbors
     edges_covered = get_edges_covered(initial_state, graph)
@@ -55,8 +61,12 @@ def greedy_hill_climbing(graph : Graph, initial_state : List[int]):
 
     return cur_state
 
-def is_goal_state(graph: Graph, state: List[int]) -> bool:
 
+def is_goal_state(graph: Graph, state: List[int]) -> bool:
+    """
+    This function checks if the state is the goal state - a vertex cover
+    return: True if goal state, otherwise false
+    """
     edges = graph.get_edges()
     vc = set(state)
     for edge in edges:
@@ -65,14 +75,21 @@ def is_goal_state(graph: Graph, state: List[int]) -> bool:
             return False
     return True
 
-def get_edges_covered_by_vertex(v: int, graph: Graph):
+
+def get_edges_covered_by_vertex(v: int, graph: Graph) -> Set[FrozenSet[int]]:
+    """
+    This function returns a set of all edges covered by vertex v
+    """
     edges_covered = set()
     for u in graph.get_neighbors()[v]:
         edges_covered.add(frozenset({u, v}))
     return edges_covered
 
 
-def get_edges_covered(state: List[int], graph: Graph):
+def get_edges_covered(state: List[int], graph: Graph) -> Set[FrozenSet[int]]:
+    """
+    This function returns a set of all edges covered by the current state
+    """
     edges_covered = set()
     for u in state:
         for u_neighbor in graph.get_neighbors()[u]:
