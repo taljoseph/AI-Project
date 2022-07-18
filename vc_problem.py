@@ -54,3 +54,10 @@ class VC_Problem:
             if e[0] not in vc and e[1] not in vc:
                 return False
         return True
+
+    def get_graph(self):
+        return self._graph
+
+
+
+

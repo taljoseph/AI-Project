@@ -16,7 +16,7 @@ class Graph:
         """
         :param edges_list: a list of the edges in the graph - (u,v)
         :param vertex_list: a list of the vertices in the graph
-        :param neighbors: a dictionary where the key is the number of a vertex, and the value is a list of vertex
+        :param neighbors: a dictionary where the key is the number of a vertex, and the value is a set of vertex
          neighbors
         """
         self._edges = edges_list
@@ -49,6 +49,10 @@ class Graph:
     def get_num_edges(self):
         return self._num_edges
 
+    def __str__(self):
+        return "Vertices: " + str(self._vertices) + "\nEdges: " + str(self._edges) + "\nNeighbors: " + \
+               str(self._neighbors)
+
     def draw_vertex_cover(self, vertex_cover):
         """
         This function draws the graph such that vertices that are part of the vertex cover are colored in green,
@@ -61,7 +65,7 @@ class Graph:
             if vertex in vertex_cover:
                 G.add_node(vertex, color='green')
             else:
-                G.add_node(vertex, color='teal')
+                G.add_node(vertex, color='red')
 
         for edge in self._edges:
             e = list(edge)
@@ -73,17 +77,17 @@ class Graph:
     def create_p_random_graph(self, num_vertices: int, p: float):
         vertices = [i for i in range(num_vertices)]
         self._vertices = vertices
+        self._num_vertices = num_vertices
         edges = []
         neighbors = {}
+        for i in range(num_vertices):
+            neighbors[i] = set()
         for i in range(num_vertices):
             for j in range(i + 1, num_vertices):
                 if random.random() < p:
                     edges.append(frozenset({i, j}))
-                    if i not in neighbors:
-                        neighbors[i] = []
-                    if j not in neighbors:
-                        neighbors[j] = []
-                    neighbors[i].append(j)
-                    neighbors[j].append(i)
+                    neighbors[i].add(j)
+                    neighbors[j].add(i)
         self._edges = edges
+        self._num_edges = len(edges)
         self._neighbors = neighbors
