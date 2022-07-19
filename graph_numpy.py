@@ -31,8 +31,8 @@ class GraphNP:
             self._num_edges = np.sum(self._neighbours_mtx) / 2
 
     def get_neighbours_mtx(self):
-        # return deepcopy(self._neighbours_mtx)
-        return self._neighbours_mtx
+        return deepcopy(self._neighbours_mtx)
+        # return self._neighbours_mtx
 
     def get_vertices(self):
         return self._vertices

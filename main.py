@@ -61,8 +61,5 @@ if __name__ == '__main__':
     # graph.draw_vertex_cover(a)
     # graph.draw_vertex_cover(b)
     # problem = VC_Problem(graph, [1, 2])
-    graph = GraphNP()
-    graph.create_p_random_graph(4, 0.5)
-    graph.draw_vertex_cover([])
-    print(graph)
+    graph = Graph()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
