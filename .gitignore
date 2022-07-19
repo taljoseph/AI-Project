@@ -5,6 +5,7 @@
 # Inverse ignore some stuff
 !.gitignore
 !**.py
+!**.pdf
 
 # OS Stuff
 .DS_Store
