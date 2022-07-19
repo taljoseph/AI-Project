@@ -1,5 +1,7 @@
 import math
 
+from numpy import mat
+
 from Graph import *
 
 
@@ -130,6 +132,27 @@ def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[i
                 valid_neighbor = True
                 break
     return list(cur_state)
+
+def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
+    init_state = []
+    best_vc = []
+    len_of_best = math.inf
+    for i in range(num_iters):
+        init_state = create_random_initial_state(graph)
+        cur_vc = greedy_hill_climbing(graph, init_state)
+        if len(cur_vc) < len_of_best:
+            best_vc = cur_vc
+            len_of_best = len(cur_vc)
+    return best_vc
+
+def create_random_initial_state(graph: Graph):
+    """
+    creates and returns a random initial state - random subsequence of the
+    vertices in the graph
+    """
+    num_vertices_graph = graph.get_num_vertices()
+    num_vertices_vc = random.randint(0, num_vertices_graph)
+    return random.sample([i for i in range(num_vertices_graph)], num_vertices_vc)
 
 
 def is_goal_state(graph: Graph, state: List[int]) -> bool:
