@@ -27,19 +27,22 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     This function finds a vertex cover using the greedy hill climbing algorithm
     return: a list of vertices that are a vertex cover
     """
-    cur_state = initial_state
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
     #adding neighbors
     edges_covered = get_edges_covered(initial_state, graph)
     num_edges = graph.get_num_edges()
     while len(edges_covered) < num_edges:
         best_vertex = -1
         most_edges_added = -1
-        for v in list(set(graph.get_vertices()).difference(set(cur_state))):
-            new_edges_added = len(graph.get_neighbors()[v].difference(set(cur_state)))
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
             if new_edges_added > most_edges_added:
                 best_vertex = v
                 most_edges_added = new_edges_added
-        cur_state.append(best_vertex)
+        cur_state.add(best_vertex)
+        rest_vertices_set.remove(best_vertex)
         edges_covered |= get_edges_covered_by_vertex(best_vertex, graph)
 
     # removing neighbors
@@ -48,18 +51,85 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
         worst_v = -1
         least_edges = math.inf
         valid_neighbor = False
-        for i in range(len(cur_state)):
-            v = cur_state[i]
-            v_neighbors = graph.get_neighbors()[v]
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
             num_edges_covered = len(v_neighbors)
-            if not v_neighbors.difference(set(cur_state)) and num_edges_covered < least_edges:
+            if num_edges_covered < least_edges and not v_neighbors.difference(cur_state):
                 worst_v = v
                 least_edges = num_edges_covered
                 valid_neighbor = True
         if valid_neighbor:
             cur_state.remove(worst_v)
+    return list(cur_state)
 
-    return cur_state
+def stochastic_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    This function finds a vertex cover using the stochastic hill climbing algorithm
+    return: a list of vertices that are a vertex cover
+    """
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
+    #adding neighbors
+    edges_covered = get_edges_covered(initial_state, graph)
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        good_vertex = []
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
+            if new_edges_added:
+                good_vertex.append(v)
+        rand_vertex = random.choice(good_vertex)
+        cur_state.add(rand_vertex)
+        rest_vertices_set.remove(rand_vertex)
+        edges_covered |= get_edges_covered_by_vertex(rand_vertex, graph)
+
+    # removing neighbors
+    valid_neighbor = True
+    while valid_neighbor:
+        worst_vertex = []
+        valid_neighbor = False
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
+            if not v_neighbors.difference(cur_state):
+                worst_vertex.append(v)
+                valid_neighbor = True
+        if valid_neighbor:
+            cur_state.remove(random.choice(worst_vertex))
+    return list(cur_state)
+
+
+def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    This function finds a vertex cover using the greedy hill climbing algorithm
+    return: a list of vertices that are a vertex cover
+    """
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
+    #adding neighbors
+    edges_covered = get_edges_covered(initial_state, graph)
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
+            if new_edges_added:
+                cur_state.add(v)
+                rest_vertices_set.remove(v)
+                edges_covered |= get_edges_covered_by_vertex(v, graph)
+                break
+
+    # removing neighbors
+    valid_neighbor = True
+    while valid_neighbor:
+        valid_neighbor = False
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
+            if not v_neighbors.difference(cur_state):
+                cur_state.remove(v)
+                valid_neighbor = True
+                break
+    return list(cur_state)
 
 
 def is_goal_state(graph: Graph, state: List[int]) -> bool:
