@@ -4,6 +4,7 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import copy
 
+from graph_numpy import *
 from Graph import *
 from algorithms import *
 import itertools
@@ -44,20 +45,24 @@ if __name__ == '__main__':
     # new_graph.draw_vertex_cover(vertex_cover)
     # graph = Graph([frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3})], [0, 1, 2, 3], {0: {2, 3, 1}, 2: {0}, 3: {0}, 1: {0}})
     # graph = Graph([frozenset({0, 4}), frozenset({1, 2}), frozenset({1, 4}), frozenset({2, 3})], [0, 1, 2, 3, 4], {0: {4}, 1: {2, 4}, 2: {1, 3}, 3: {2}, 4: {0, 1}})
-    graph = Graph()
-    graph.create_p_random_graph(200, 0.005)
-    # print(graph)
-    starta = time.time()
-    a = greedy_hill_climbing(graph, [])
-    print(time.time() - starta)
-    startb = time.time()
-    b = two_approximate_vertex_cover(graph)
-    print(time.time() - startb)
-    print(a)
-    print(len(a), is_goal_state(graph, a))
-    print(b)
-    print(len(b), is_goal_state(graph, b))
-    graph.draw_vertex_cover(a)
-    graph.draw_vertex_cover(b)
+    # graph = Graph()
+    # graph.create_p_random_graph(200, 0.005)
+    # # print(graph)
+    # starta = time.time()
+    # a = greedy_hill_climbing(graph, [])
+    # print(time.time() - starta)
+    # startb = time.time()
+    # b = two_approximate_vertex_cover(graph)
+    # print(time.time() - startb)
+    # print(a)
+    # print(len(a), is_goal_state(graph, a))
+    # print(b)
+    # print(len(b), is_goal_state(graph, b))
+    # graph.draw_vertex_cover(a)
+    # graph.draw_vertex_cover(b)
     # problem = VC_Problem(graph, [1, 2])
+    graph = GraphNP()
+    graph.create_p_random_graph(4, 0.5)
+    graph.draw_vertex_cover([])
+    print(graph)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
