@@ -195,7 +195,7 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
     neighbors_dict = graph.get_neighbors()
     edges_covered = get_edges_covered(initial_state, graph)
     num_edges = graph.get_num_edges()
-    val = len(edges_covered) - len(cur_state)
+    val = len(edges_covered) * 2 - len(cur_state)
     t = 1
     best_sol = None
     best_sol_num_vertices = math.inf
@@ -203,7 +203,7 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
 
     while True:
         T = schedule(t)
-        if T < 1e-16:
+        if T < 5e-3:
             return list(cur_state) if best_sol is None else list(best_sol)
         k = random.randint(0, num_vertices - 1)
         if k in cur_state:
@@ -212,6 +212,10 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
             p = 1
             if len(new_edges_covered) < len(edges_covered):
                 p = math.e ** ((new_val - val)/T)
+            if random.random() < p:
+                cur_state.remove(k)
+                edges_covered = new_edges_covered
+                val = new_val
 
         else:
             new_edges_covered = edges_covered | (get_edges_covered_by_vertex(k, graph))
@@ -219,10 +223,10 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
             p = 1
             if len(new_edges_covered) == len(edges_covered):
                 p = math.e ** ((new_val - val)/T)
-        if random.random() < p:
-            cur_state.add(k)
-            edges_covered = new_edges_covered
-            val = new_val
+            if random.random() < p:
+                cur_state.add(k)
+                edges_covered = new_edges_covered
+                val = new_val
         if len(edges_covered) == num_edges and \
                 len(cur_state) < best_sol_num_vertices:
             best_sol = cur_state
