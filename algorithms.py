@@ -1,3 +1,4 @@
+import copy
 import math
 
 from numpy import mat
@@ -22,6 +23,61 @@ def two_approximate_vertex_cover(graph: Graph) -> List[int]:
         edges_to_remove |= {frozenset({vertex2, v}) for v in neighbors[vertex2]}
         remaining_edges -= edges_to_remove
     return vertex_cover
+
+
+def ghc_weighted(graph: Graph, initial_state: List[int], num_iters) -> List[int]:
+    edges = set(graph.get_edges())
+    weights = {edge: 1 for edge in edges}
+    best_cover = graph.get_vertices()
+    neighbours = graph.get_neighbors()
+    for i in range(num_iters):
+        remaining_vertices = set(graph.get_vertices())
+        remaining_edges = copy.deepcopy(edges)
+        cur_state = set()
+        while remaining_edges:
+            cur_best_vertex = None
+            cur_best_val = 0
+            for vertex in remaining_vertices:
+                vertex_val = 0
+                z = neighbours[vertex]
+                for neighbour in z:
+                    if neighbour in remaining_vertices:
+                        vertex_val += weights[frozenset({vertex, neighbour})]
+                if vertex_val > cur_best_val:
+                    cur_best_val = vertex_val
+                    cur_best_vertex = vertex
+            cur_state.add(cur_best_vertex)
+            remaining_vertices.remove(cur_best_vertex)
+            remaining_edges -= {frozenset({cur_best_vertex, u}) for u in neighbours[cur_best_vertex]}
+            for edge in remaining_edges:
+                weights[edge] += 1
+
+        # removing neighbors
+        valid_neighbor = True
+        while valid_neighbor:
+            worst_v = -1
+            least_edges = math.inf
+            valid_neighbor = False
+            for v in cur_state:
+                v_neighbours = neighbours[v]
+                num_edges_covered = len(v_neighbours)
+                if num_edges_covered < least_edges and not v_neighbours.difference(cur_state):
+                    worst_v = v
+                    least_edges = num_edges_covered
+                    valid_neighbor = True
+            if valid_neighbor:
+                cur_state.remove(worst_v)
+        if len(best_cover) > len(cur_state):
+            best_cover = cur_state
+    return list(best_cover)
+
+
+
+
+
+
+
+
 
 
 def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
@@ -231,3 +287,9 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
                 len(cur_state) < best_sol_num_vertices:
             best_sol = cur_state
         t += 1
+
+
+# aa = {frozenset({1, 2}): 4, frozenset({2, 3}): 1, frozenset({2, 1}): 5}
+#
+# print(aa[frozenset({2, 1})])
+# print(aa[frozenset({1, 2})])
