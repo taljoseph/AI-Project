@@ -289,7 +289,52 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
         t += 1
 
 
-# aa = {frozenset({1, 2}): 4, frozenset({2, 3}): 1, frozenset({2, 1}): 5}
-#
-# print(aa[frozenset({2, 1})])
-# print(aa[frozenset({1, 2})])
+def local_beam_search(graph: Graph, k):
+    k_states = []
+    vertices = set(graph.get_vertices())
+    for i in range(k):
+        rand_state = create_random_initial_state(graph)
+        edges_covered = get_edges_covered(rand_state, graph)
+        value = 2 * len(edges_covered) - len(rand_state)
+        rand_state = set(rand_state)
+        remaining_vertices = vertices.difference(rand_state)
+        k_states.append([rand_state, remaining_vertices, edges_covered, value])
+    k_states = sorted(k_states, key=lambda x: x[3], reverse=True)
+
+    num_edges = graph.get_num_edges()
+    neighbours_dict = graph.get_neighbors()
+    while True:
+        all_neighbours = []
+        any_better_neighbour = False
+        for state in k_states:  # [0] = vertex cover, [1] = remaining vertices, [2] = edges_covered, [3] = value
+            if len(state[2]) < num_edges:
+                for vertex in state[1]:
+                    new_vertices = state[0] | {vertex}
+                    vertex_edges = get_edges_covered_by_vertex(vertex, graph)
+                    new_edges = state[2] | vertex_edges
+                    new_value = len(new_edges) * 2 - len(new_vertices)
+                    if new_value > state[3]:
+                        any_better_neighbour = True
+                        all_neighbours.append([new_vertices, state[1] - {vertex}, new_edges, new_value])
+
+            else:  # num_edges = num edges covered
+                all_neighbours.append(state)
+                for vertex in state[0]:
+                    is_valid = True
+                    for neighbour in neighbours_dict[vertex]:
+                        if neighbour not in state[0]:
+                            is_valid = False
+                            break
+                    if not is_valid:
+                        continue
+                    new_vertices = state[0] - {vertex}
+                    new_value = state[3] + 1
+                    any_better_neighbour = True
+                    all_neighbours.append([new_vertices, state[1] - {vertex}, state[2], new_value])
+        if not any_better_neighbour:
+            return list(k_states[0][0])
+        all_neighbours = sorted(all_neighbours, key=lambda x: x[3], reverse=True)
+        if len(all_neighbours) < k:
+            k_states = all_neighbours
+        else:
+            k_states = all_neighbours[:k]
