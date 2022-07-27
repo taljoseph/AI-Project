@@ -211,7 +211,7 @@ def create_random_initial_state(graph: Graph):
     return random.sample([i for i in range(num_vertices_graph)], num_vertices_vc)
 
 
-def is_goal_state(graph: Graph, state: List[int]) -> bool:
+def is_vc(graph: Graph, state: List[int]) -> bool:
     """
     This function checks if the state is the goal state - a vertex cover
     return: True if goal state, otherwise false
