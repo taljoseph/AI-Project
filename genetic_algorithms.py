@@ -21,7 +21,7 @@ class VC_GA(ABC):
     def mutation(self, state: np.ndarray):
         pass
 
-    def create_n_random_states(self, n: int) -> np.ndarray[np.ndarray]:
+    def create_n_random_states(self, n: int) -> np.ndarray:
         return np.random.binomial(1, 0.5, (n, self._graph.get_num_vertices()))
 
     # def selection(self, states: np.ndarray[np.ndarray]):
@@ -61,7 +61,7 @@ class VC_GA(ABC):
                 best_sol_val = fitness_array[best_fitness_arg]
                 best_sol = states[best_fitness_arg]
 
-        return best_sol
+        return np.flatnonzero(best_sol).tolist()
 
 
 class RegularVC_GA(VC_GA):
