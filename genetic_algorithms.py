@@ -38,23 +38,22 @@ class VC_GA(ABC):
         fitness_array = np.zeros(population_size)
         for i in range(population_size):
             fitness_array[i] = self.fitness(states[i])
-        if fitness_array.min() < 0:
-            fitness_array += abs(fitness_array.min())
         best_sol = states[fitness_array.argmax()]
         best_sol_val = fitness_array.max()
 
         for i in range(num_gens):
+            if fitness_array.min() < 0:
+                fitness_array += abs(fitness_array.min())  # todo sum might be 0
             selection_arr = fitness_array / fitness_array.sum()
             rand_pairs = np.random.choice(np.arange(population_size), size=(population_size, 2), p=selection_arr)
+            states_copy = states.copy()
             for i in range(population_size):
                 first_state_arg = rand_pairs[i][0]
                 second_state_arg = rand_pairs[i][1]
-                states[i] = self.mutation(self.reproduce(states[first_state_arg], states[second_state_arg],
+                states[i] = self.mutation(self.reproduce(states_copy[first_state_arg], states_copy[second_state_arg],
                                                          fitness_array[first_state_arg], fitness_array[second_state_arg]))
             for i in range(population_size):
                 fitness_array[i] = self.fitness(states[i])
-            if fitness_array.min() < 0:
-                fitness_array += abs(fitness_array.min())
 
             best_fitness_arg = fitness_array.argmax()
             if best_sol_val < fitness_array[best_fitness_arg]:
