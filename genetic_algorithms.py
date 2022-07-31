@@ -3,6 +3,13 @@ from Graph import *
 import numpy as np
 
 
+def softmax(fitness_array: np.ndarray):
+    fitness_array -= fitness_array.max() + 1
+    fitness_array = np.exp(fitness_array)
+    fitness_array /= fitness_array.sum()
+    return fitness_array
+
+
 class VC_GA(ABC):
     def __init__(self, graph: Graph):
         self._graph = graph
@@ -34,39 +41,24 @@ class VC_GA(ABC):
     def perform_ga(self, num_gens: int, population_size: int):
         # TODO best vc or best fitness, currently best fitness
         states = self.create_n_random_states(population_size)
-        probs = np.ones(population_size)
-        probs[0] = 1/2
-        for i in range(1, population_size - 1):
-            probs[i] = probs[i - 1] / 2
-        probs[population_size - 1] = probs[population_size - 2]
 
         fitness_array = np.zeros(population_size)
         for i in range(population_size):
             fitness_array[i] = self.fitness(states[i])
-        arguments = np.argsort(fitness_array)[::-1]
-        fitness_array = fitness_array[arguments]
-        states = states[arguments]
         best_sol = states[fitness_array.argmax()]
         best_sol_val = fitness_array.max()
 
         for i in range(num_gens):
-            if fitness_array.min() < 0:
-                fitness_array += abs(fitness_array.min())  # todo sum might be 0
-            selection_arr = fitness_array / fitness_array.sum()
+            probs = softmax(fitness_array)
             rand_pairs = np.random.choice(np.arange(population_size), size=(population_size, 2), p=probs)
-            # new_states = np.zeros(states.shape)
             copy = states.copy()
             for i in range(population_size):
                 first_state_arg = rand_pairs[i][0]
                 second_state_arg = rand_pairs[i][1]
                 states[i] = self.mutation(self.reproduce(copy[first_state_arg], copy[second_state_arg],
                                                              fitness_array[first_state_arg], fitness_array[second_state_arg]))
-            # states = new_states
             for i in range(population_size):
                 fitness_array[i] = self.fitness(states[i])
-            arguments = np.argsort(fitness_array)[::-1]
-            fitness_array = fitness_array[arguments]
-            states = states[arguments]
 
             best_fitness_arg = fitness_array.argmax()
             if best_sol_val < fitness_array[best_fitness_arg]:
@@ -89,6 +81,35 @@ class RegularVC_GA(VC_GA):
         for v in vertices:
             edges_covered |= self._vertex_edges[v]
         return 2 * len(edges_covered) - vertices.size
+
+    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        p = 0.5
+        if s1_fitness or s2_fitness:
+            p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, p, (num_vertices,))
+        return np.where(prob_array, state1, state2)
+
+    def mutation(self, state: np.ndarray):
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
+        return np.where(prob_array, np.logical_not(state), state)
+
+
+class VCPunish_GA(VC_GA):
+    def __init__(self, graph):
+        super(VCPunish_GA, self).__init__(graph)
+        vertices = self._graph.get_vertices()
+        neighbours = graph.get_neighbors()
+        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
+
+    def fitness(self, state: np.ndarray):
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        for v in vertices:
+            edges_covered |= self._vertex_edges[v]
+        punishment = 0 if len(edges_covered) == self._graph.get_num_edges() else 5
+        return len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
         p = 0.5

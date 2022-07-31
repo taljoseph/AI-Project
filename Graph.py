@@ -91,3 +91,19 @@ class Graph:
         self._edges = edges
         self._num_edges = len(edges)
         self._neighbors = neighbors
+
+    def create_graph(self, num_vertices: int, edges: List[Tuple[int, int]]):
+        vertices = [i for i in range(num_vertices)]
+        new_edges = []
+        neighbors = {}
+        for v in vertices:
+            neighbors[v] = set()
+        for edge in edges:
+            neighbors[edge[0]].add(edge[1])
+            neighbors[edge[1]].add(edge[0])
+            new_edges.append(frozenset({edge[0], edge[1]}))
+        self._vertices = vertices
+        self._num_vertices = num_vertices
+        self._edges = new_edges
+        self._num_edges = len(new_edges)
+        self._neighbors = neighbors
