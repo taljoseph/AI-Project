@@ -55,7 +55,7 @@ class Graph:
 
     def draw_vertex_cover(self, vertex_cover):
         """
-        This function draws the graph such that vertices that are part of the vertex cover are colored in green,
+        This function draws the graph1 such that vertices that are part of the vertex cover are colored in green,
         otherwise in teal
         :param vertex_cover: a vertex cover
         :return:
@@ -71,6 +71,7 @@ class Graph:
             e = list(edge)
             G.add_edge(e[0], e[1])
         colors = [node[1]['color'] for node in G.nodes(data=True)]
+        # pos = nx.circular_layout(G)
         nx.draw(G, node_color=colors, with_labels=True)
         plt.show()
 
