@@ -138,11 +138,23 @@ def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
             weights[v] = math.inf
 
     for vertex in remaining_vertices:
-        max_val = -math.inf
-        min_val = math.inf
+        cur_score = 0
         for neighbour in remaining_neighbours[vertex]:
+            max_val = -math.inf
+            min_val = math.inf
+            for n_o_n in remaining_neighbours[neighbour]:
+                val = len(remaining_neighbours[n_o_n])
+                if val > max_val:
+                    max_val = val
+                if val < min_val:
+                    min_val = val
+            if len(remaining_neighbours[neighbour]) >= max_val: #TODO maybe do average if equal
+                cur_score += min_val
+            else:
+                cur_score += max_val
+        weights[vertex] = cur_score
 
-            for n_o_n in neighbours[neighbour]:
+
 
 
             if neighbour_of_neighbour in remaining_vertices:
