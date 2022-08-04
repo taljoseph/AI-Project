@@ -71,8 +71,8 @@ class Graph:
             e = list(edge)
             G.add_edge(e[0], e[1])
         colors = [node[1]['color'] for node in G.nodes(data=True)]
-        # pos = nx.circular_layout(G)
-        nx.draw(G, node_color=colors, with_labels=True)
+        pos = nx.circular_layout(G)
+        nx.draw(G, node_color=colors, with_labels=True, pos=pos)
         plt.show()
 
     def create_p_random_graph(self, num_vertices: int, p: float):

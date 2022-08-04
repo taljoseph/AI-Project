@@ -106,10 +106,16 @@ if __name__ == '__main__':
     # time7 = time.time() - start7 + time6
     # print("Genetic Alg punish + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc7), is_vc(graph1, vc7), time7))
 
+
     start8 = time.time()
     vc8 = ghc_weighted_special(graph1, [])
     time8 = time.time() - start8
     print("Weighted new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc8), is_vc(graph1, vc8), time8))
+
+    start9 = time.time()
+    vc9 = random_restart_whc_special(graph1, 100)
+    time9 = time.time() - start9
+    print("Weighted new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc8), is_vc(graph1, vc9), time9))
 
 
     graph1.draw_vertex_cover(vc8)
