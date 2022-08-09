@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from Graph import *
 import numpy as np
-
+import math
 
 def softmax(fitness_array: np.ndarray):
     fitness_array -= fitness_array.max() + 1
@@ -62,7 +62,6 @@ class VC_GA(ABC):
 
             best_fitness_arg = fitness_array.argmax()
             if best_sol_val < fitness_array[best_fitness_arg]:
-                print(i)
                 best_sol_val = fitness_array[best_fitness_arg]
                 best_sol = states[best_fitness_arg].copy()
 
@@ -124,3 +123,43 @@ class VCPunish_GA(VC_GA):
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
+
+
+class VC_NEW_MUT(VC_GA):
+    def __init__(self, graph):
+        super(VC_NEW_MUT, self).__init__(graph)
+        self._vertices = self._graph.get_vertices()
+        self._neighbours = graph.get_neighbors()
+        self._vertex_edges = {v: {frozenset({v, u}) for u in self._neighbours[v]} for v in self._vertices}
+
+    def fitness(self, state: np.ndarray):
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        for v in vertices:
+            edges_covered |= self._vertex_edges[v]
+        punishment = 0 if len(edges_covered) == self._graph.get_num_edges() else 5
+        return len(edges_covered) - vertices.size
+
+    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        p = 0.5
+        if s1_fitness or s2_fitness:
+            p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, p, (num_vertices,))
+        return np.where(prob_array, state1, state2)
+
+    def mutation(self, state: np.ndarray):
+        rand_vertices = np.random.choice(self._vertices, math.ceil(0.01 * len(self._vertices)), replace=False)
+        prob_array = np.zeros(rand_vertices.size)
+        for i in range(prob_array.size):
+            neighbours = np.array(list(self._neighbours[rand_vertices[i]]))
+            if neighbours.size == 0:
+                prob_array[i] = state[rand_vertices[i]]
+            else:
+                prob_array[i] = np.count_nonzero(state[neighbours])
+                if state[rand_vertices[i]] == 0:
+                    prob_array[i] = neighbours.size - prob_array[i]
+                prob_array[i] /= neighbours.size
+        prob_array = np.random.binomial(1, prob_array)
+        state[rand_vertices] = np.where(prob_array, np.logical_not(state[rand_vertices]), state[rand_vertices])
+        return state
