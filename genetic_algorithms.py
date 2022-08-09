@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from Graph import *
 import numpy as np
-
+import math
 
 def softmax(fitness_array: np.ndarray):
     fitness_array -= fitness_array.max() + 1
@@ -43,13 +43,13 @@ class VC_GA(ABC):
             probs = softmax(fitness_array)
             rand_pairs = np.random.choice(np.arange(population_size), size=(population_size, 2), p=probs)
             copy = states.copy()
-            for i in range(population_size):
-                first_state_arg = rand_pairs[i][0]
-                second_state_arg = rand_pairs[i][1]
-                states[i] = self.mutation(self.reproduce(copy[first_state_arg], copy[second_state_arg],
+            for j in range(population_size):
+                first_state_arg = rand_pairs[j][0]
+                second_state_arg = rand_pairs[j][1]
+                states[j] = self.mutation(self.reproduce(copy[first_state_arg], copy[second_state_arg],
                                                              fitness_array[first_state_arg], fitness_array[second_state_arg]))
-            for i in range(population_size):
-                fitness_array[i] = self.fitness(states[i])
+            for j in range(population_size):
+                fitness_array[j] = self.fitness(states[j])
 
             best_fitness_arg = fitness_array.argmax()
             if best_sol_val < fitness_array[best_fitness_arg]:
@@ -71,7 +71,7 @@ class RegularVC_GA(VC_GA):
         vertices = np.flatnonzero(state)
         for v in vertices:
             edges_covered |= self._vertex_edges[v]
-        return 2 * len(edges_covered) + state.size - vertices.size
+        return 2 * len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
         p = 0.5
@@ -85,7 +85,6 @@ class RegularVC_GA(VC_GA):
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
-
 
 class RegularVC_GA2(VC_GA):
     def __init__(self, graph):
@@ -256,4 +255,44 @@ class FixedSizeVCGA(VC_GA):
         #     state[rand_v] = 0
         #     state[ver] = 1
 
+        return state
+
+
+class VC_NEW_MUT(VC_GA):
+    def __init__(self, graph):
+        super(VC_NEW_MUT, self).__init__(graph)
+        self._vertices = self._graph.get_vertices()
+        self._neighbours = graph.get_neighbors()
+        self._vertex_edges = {v: {frozenset({v, u}) for u in self._neighbours[v]} for v in self._vertices}
+
+    def fitness(self, state: np.ndarray):
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        for v in vertices:
+            edges_covered |= self._vertex_edges[v]
+        punishment = 0 if len(edges_covered) == self._graph.get_num_edges() else 5
+        return len(edges_covered) - vertices.size
+
+    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        p = 0.5
+        if s1_fitness or s2_fitness:
+            p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, p, (num_vertices,))
+        return np.where(prob_array, state1, state2)
+
+    def mutation(self, state: np.ndarray):
+        rand_vertices = np.random.choice(self._vertices, math.ceil(0.01 * len(self._vertices)), replace=False)
+        prob_array = np.zeros(rand_vertices.size)
+        for i in range(prob_array.size):
+            neighbours = np.array(list(self._neighbours[rand_vertices[i]]))
+            if neighbours.size == 0:
+                prob_array[i] = state[rand_vertices[i]]
+            else:
+                prob_array[i] = np.count_nonzero(state[neighbours])
+                if state[rand_vertices[i]] == 0:
+                    prob_array[i] = neighbours.size - prob_array[i]
+                prob_array[i] /= neighbours.size
+        prob_array = np.random.binomial(1, prob_array)
+        state[rand_vertices] = np.where(prob_array, np.logical_not(state[rand_vertices]), state[rand_vertices])
         return state

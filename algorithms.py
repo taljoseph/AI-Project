@@ -25,16 +25,38 @@ def two_approximate_vertex_cover(graph: Graph) -> List[int]:
     return vertex_cover
 
 
+def random_restart_whc_special(graph: Graph, num_iters: int) -> List[int]:
+    best_vc = []
+    len_of_best = math.inf
+    for i in range(num_iters):
+        init_state = create_random_initial_state(graph)
+        cur_vc = ghc_weighted_special(graph, init_state)
+        if len(cur_vc) < len_of_best:
+            best_vc = cur_vc
+            len_of_best = len(cur_vc)
+    return best_vc
+
+def random_restart_whc_special2(graph: Graph, num_iters: int) -> List[int]:
+    best_vc = []
+    len_of_best = math.inf
+    for i in range(num_iters):
+        cur_vc = ghc_weighted_special2(graph, [])
+        if len(cur_vc) < len_of_best:
+            best_vc = cur_vc
+            len_of_best = len(cur_vc)
+    return best_vc
+
+
 def ghc_weighted_special(graph: Graph, initial_state: List[int]):
     state = set(initial_state)
     neighbours = graph.get_neighbors()
     edges = set(graph.get_edges())
-    remaining_edges = copy.deepcopy(edges) - get_edges_covered(state, graph)
+    remaining_edges = copy.deepcopy(edges) - get_edges_covered(initial_state, graph)
     remaining_vertices = set(graph.get_vertices()) - state
     weights = {edge: 0 for edge in edges}
 
     # set weights, calculated by number of neighbours not covered each vertex has (less is more):
-    for edge in edges:
+    for edge in remaining_edges:
         for vertex in edge:
             num_non_covered_neighbours = 0
             for neighbour in neighbours[vertex]:
@@ -93,6 +115,100 @@ def ghc_weighted_special(graph: Graph, initial_state: List[int]):
             state.remove(cur_best_vertex)
 
     return state
+
+
+def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
+    state = set(initial_state)
+    neighbours = graph.get_neighbors()
+    edges = set(graph.get_edges())
+    remaining_edges = copy.deepcopy(edges) - get_edges_covered(initial_state, graph)
+    remaining_vertices = set(graph.get_vertices()) - state
+    weights = {vertex: 0 for vertex in remaining_vertices}
+
+    remaining_neighbours = {vertex: set() for vertex in remaining_vertices}
+    for edge in remaining_edges:
+        v1, v2 = edge
+        remaining_neighbours[v1].add(v2)
+        remaining_neighbours[v2].add(v1)
+
+    while remaining_edges:
+        for vertex in remaining_vertices:
+            if len(remaining_neighbours[vertex]) == 1:
+                v, = remaining_neighbours[vertex]
+                weights[v] = math.inf
+        # TODO put the below behind an if statement checking if max weight is not infinity
+        #  (because then calculation is pointless)
+        for vertex in remaining_vertices:
+            cur_score = 0
+            for neighbour in remaining_neighbours[vertex]:
+                max_val = -math.inf
+                min_val = math.inf
+                for n_o_n in remaining_neighbours[neighbour]:
+                    val = len(remaining_neighbours[n_o_n])
+                    if val > max_val:
+                        max_val = val
+                    if val < min_val:
+                        min_val = val
+                if len(remaining_neighbours[neighbour]) >= max_val:  # TODO maybe do average if equal
+                    cur_score += min_val
+                else:
+                    cur_score += max_val
+            weights[vertex] = cur_score
+        # best_vertex = max(weights, key=weights.get)
+        max_val = max(weights.values())
+        best_vertices = [k for k, v in weights.items() if v == max_val]
+        best_vertex = random.choice(best_vertices)
+        state.add(best_vertex)
+        weights[best_vertex] = 0
+        for neighbour in remaining_neighbours[best_vertex]:
+            remaining_neighbours[neighbour].remove(best_vertex)
+            remaining_edges.remove(frozenset({best_vertex, neighbour}))
+        del remaining_neighbours[best_vertex]
+        remaining_vertices.remove(best_vertex)
+
+    # Reduce vertex cover
+
+    weights = {}
+    can_reduce_cover = True
+    while can_reduce_cover:
+        # cur_best_score = math.inf
+        # cur_best_vertex = None
+        for vertex in state:
+            cant_remove_vertex = False
+            for neighbour in neighbours[vertex]:
+                if neighbour not in state:
+                    cant_remove_vertex = True
+                    break
+            if cant_remove_vertex:
+                continue
+            # can remove vertex, set its weights:
+            cur_score = 0
+            for neighbour in neighbours[vertex]:
+                max_val = -math.inf
+                min_val = math.inf
+                for n_o_n in neighbours[neighbour]:
+                    val = len(neighbours[n_o_n])
+                    if val > max_val:
+                        max_val = val
+                    if val < min_val:
+                        min_val = val
+                if len(neighbours[neighbour]) >= max_val:  # TODO maybe do average if equal
+                    cur_score += max_val
+                else:
+                    cur_score += min_val
+            weights[vertex] = cur_score
+
+        if not weights:
+            can_reduce_cover = False
+        else:
+            best_vertex = max(weights, key=weights.get)
+            state.remove(best_vertex)
+            del weights[best_vertex]
+            for v in list(weights.keys()):
+                if v in neighbours[best_vertex]:
+                    del weights[v]
+    return state
+
 
 
 def ghc_weighted(graph: Graph, initial_state: List[int], num_iters) -> List[int]:
