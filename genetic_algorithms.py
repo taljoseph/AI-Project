@@ -52,16 +52,17 @@ class VC_GA(ABC):
             probs = softmax(fitness_array)
             rand_pairs = np.random.choice(np.arange(population_size), size=(population_size, 2), p=probs)
             copy = states.copy()
-            for i in range(population_size):
-                first_state_arg = rand_pairs[i][0]
-                second_state_arg = rand_pairs[i][1]
-                states[i] = self.mutation(self.reproduce(copy[first_state_arg], copy[second_state_arg],
+            for j in range(population_size):
+                first_state_arg = rand_pairs[j][0]
+                second_state_arg = rand_pairs[j][1]
+                states[j] = self.mutation(self.reproduce(copy[first_state_arg], copy[second_state_arg],
                                                              fitness_array[first_state_arg], fitness_array[second_state_arg]))
-            for i in range(population_size):
-                fitness_array[i] = self.fitness(states[i])
+            for j in range(population_size):
+                fitness_array[j] = self.fitness(states[j])
 
             best_fitness_arg = fitness_array.argmax()
             if best_sol_val < fitness_array[best_fitness_arg]:
+                print(i)
                 best_sol_val = fitness_array[best_fitness_arg]
                 best_sol = states[best_fitness_arg].copy()
 

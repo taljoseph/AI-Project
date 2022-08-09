@@ -66,7 +66,9 @@ if __name__ == '__main__':
 
     num_vertices = 200
     graph1 = Graph()
-    graph1.create_p_random_graph(num_vertices, 0.05)
+    graph1.create_p_random_graph(num_vertices, 0.20)
+    # graph1.create_nx_graph(200, math.ceil(19900 * 0.20))
+
 
 
     start1 = time.time()
@@ -85,40 +87,51 @@ if __name__ == '__main__':
     # time3 = time.time() - start3
     # print("Genetic Alg:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc3), is_vc(graph1, vc3), time3))
     #
-    start4 = time.time()
-    vc4 = ghc_weighted(graph1, [], 100)
-    time4 = time.time() - start4
-    print("Weighted Hill Climbing:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph1, vc4), time4))
+    # start4 = time.time()
+    # vc4 = ghc_weighted(graph1, [], 100)
+    # time4 = time.time() - start4
+    # print("Weighted Hill Climbing:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph1, vc4), time4))
 
     # # start5 = time.time()
     # # vc5 = random_restart_hill_climbing(graph1, 100)
     # # time5 = time.time() - start5
     # # print("Random Restart Hill Climbing:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc5), is_vc(graph1, vc5), time5))
+
+    vc_ga_punish = VCPunish_GA(graph1)
+    start6 = time.time()
+    vc6 = vc_ga_punish.perform_ga(10000, math.ceil((num_vertices ** 0.6) / 3))
+    time6 = time.time() - start6
+    print("Genetic Alg punish:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc6), is_vc(graph1, vc6), time6))
+
+    start7 = time.time()
+    vc7 = greedy_hill_climbing(graph1, vc6)
+    time7 = time.time() - start7 + time6
+    print("Genetic Alg punish + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc7), is_vc(graph1, vc7), time7))
+
+
+    # start8 = time.time()
+    # vc8 = ghc_weighted_special(graph1, [])
+    # time8 = time.time() - start8
+    # print("Weighted special 1:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc8), is_vc(graph1, vc8), time8))
     #
-    # vc_ga_punish = VCPunish_GA(graph1)
-    # start6 = time.time()
-    # vc6 = vc_ga_punish.perform_ga(10000, math.ceil((num_vertices ** 0.6) / 3))
-    # time6 = time.time() - start6
-    # print("Genetic Alg punish:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc6), is_vc(graph1, vc6), time6))
+    # start9 = time.time()
+    # vc9 = ghc_weighted_special2(graph1, [])
+    # time9 = time.time() - start9
+    # print("Weighted special 2:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc9), is_vc(graph1, vc9), time9))
     #
-    # start7 = time.time()
-    # vc7 = greedy_hill_climbing(graph1, vc6)
-    # time7 = time.time() - start7 + time6
-    # print("Genetic Alg punish + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc7), is_vc(graph1, vc7), time7))
+    # # start10 = time.time()
+    # # vc10 = greedy_hill_climbing(graph1, vc9)
+    # # time10 = time.time() - start10 + time9
+    # # print("weighted Special 2 + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc10), is_vc(graph1, vc10), time10))
+    #
+    # start11 = time.time()
+    # vc11 = random_restart_whc_special2(graph1, 10)
+    # time11 = time.time() - start11
+    # print("random weighted Special 2:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc11), is_vc(graph1, vc11), time11))
 
 
-    start8 = time.time()
-    vc8 = ghc_weighted_special(graph1, [])
-    time8 = time.time() - start8
-    print("Weighted new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc8), is_vc(graph1, vc8), time8))
 
-    start9 = time.time()
-    vc9 = random_restart_whc_special(graph1, 100)
-    time9 = time.time() - start9
-    print("Weighted new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc8), is_vc(graph1, vc9), time9))
-
-
-    graph1.draw_vertex_cover(vc8)
+    # graph1.draw_vertex_cover(vc8)
 
 
 

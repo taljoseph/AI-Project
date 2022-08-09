@@ -24,7 +24,10 @@ import numpy as np
 # edges[i_lower] = edges.T[i_lower]
 # print(edges)
 
-prob_array = np.random.binomial(1, 0.9, (5,))
+# prob_array = np.random.binomial(1, 0.9, (5,))
+#
+# print(prob_array)
 
-print(prob_array)
+di = {1: 2, 2: 5, 3: 10, 4: 0, 5:10.1}
 
+print(max(di, key=di.get))
