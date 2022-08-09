@@ -2,7 +2,7 @@ import copy
 import math
 
 from numpy import mat
-
+from genetic_algorithms import *
 from Graph import *
 
 
@@ -72,14 +72,6 @@ def ghc_weighted(graph: Graph, initial_state: List[int], num_iters) -> List[int]
     return list(best_cover)
 
 
-
-
-
-
-
-
-
-
 def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     """
     This function finds a vertex cover using the greedy hill climbing algorithm
@@ -101,7 +93,7 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
                 most_edges_added = new_edges_added
         cur_state.add(best_vertex)
         rest_vertices_set.remove(best_vertex)
-        edges_covered |= get_edges_covered_by_vertex(best_vertex, graph)
+        edges_covered |= get_edges_covered_by_vertex(best_vertex, neighbors_dict)
 
     # removing neighbors
     valid_neighbor = True
@@ -119,6 +111,7 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
         if valid_neighbor:
             cur_state.remove(worst_v)
     return list(cur_state)
+
 
 def stochastic_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     """
@@ -140,7 +133,7 @@ def stochastic_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int
         rand_vertex = random.choice(good_vertex)
         cur_state.add(rand_vertex)
         rest_vertices_set.remove(rand_vertex)
-        edges_covered |= get_edges_covered_by_vertex(rand_vertex, graph)
+        edges_covered |= get_edges_covered_by_vertex(rand_vertex, neighbors_dict)
 
     # removing neighbors
     valid_neighbor = True
@@ -174,7 +167,7 @@ def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[i
             if new_edges_added:
                 cur_state.add(v)
                 rest_vertices_set.remove(v)
-                edges_covered |= get_edges_covered_by_vertex(v, graph)
+                edges_covered |= get_edges_covered_by_vertex(v, neighbors_dict)
                 break
 
     # removing neighbors
@@ -189,6 +182,7 @@ def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[i
                 break
     return list(cur_state)
 
+
 def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
     init_state = []
     best_vc = []
@@ -200,6 +194,7 @@ def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
             best_vc = cur_vc
             len_of_best = len(cur_vc)
     return best_vc
+
 
 def create_random_initial_state(graph: Graph):
     """
@@ -225,12 +220,12 @@ def is_vc(graph: Graph, state: List[int]) -> bool:
     return True
 
 
-def get_edges_covered_by_vertex(v: int, graph: Graph) -> Set[FrozenSet[int]]:
+def get_edges_covered_by_vertex(v: int, neighbors: Dict[int, Set[int]]) -> Set[FrozenSet[int]]:
     """
     This function returns a set of all edges covered by vertex v
     """
     edges_covered = set()
-    for u in graph.get_neighbors()[v]:
+    for u in neighbors[v]:
         edges_covered.add(frozenset({u, v}))
     return edges_covered
 
@@ -259,8 +254,10 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
 
     while True:
         T = schedule(t)
-        if T < 5e-3:
+        if T <= 0: # 1e-10:
             return list(cur_state) if best_sol is None else list(best_sol)
+        if t % 10000 == 0:
+            print(t)
         k = random.randint(0, num_vertices - 1)
         if k in cur_state:
             new_edges_covered = edges_covered.difference({frozenset({k, v}) for v in neighbors_dict[k] if v not in cur_state})
@@ -274,7 +271,7 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
                 val = new_val
 
         else:
-            new_edges_covered = edges_covered | (get_edges_covered_by_vertex(k, graph))
+            new_edges_covered = edges_covered | (get_edges_covered_by_vertex(k, neighbors_dict))
             new_val = len(new_edges_covered) * 2 - len(cur_state) - 1
             p = 1
             if len(new_edges_covered) == len(edges_covered):
@@ -310,7 +307,7 @@ def local_beam_search(graph: Graph, k):
             if len(state[2]) < num_edges:
                 for vertex in state[1]:
                     new_vertices = state[0] | {vertex}
-                    vertex_edges = get_edges_covered_by_vertex(vertex, graph)
+                    vertex_edges = get_edges_covered_by_vertex(vertex, neighbours_dict)
                     new_edges = state[2] | vertex_edges
                     new_value = len(new_edges) * 2 - len(new_vertices)
                     if new_value > state[3]:
@@ -338,3 +335,77 @@ def local_beam_search(graph: Graph, k):
             k_states = all_neighbours
         else:
             k_states = all_neighbours[:k]
+
+
+def ga_vc(ga: FixedSizeVCGA, graph: Graph, num_generations: int, population_size: int):
+    two_approx = two_approximate_vertex_cover(graph)
+    min_vc_size = round(len(two_approx) / 2)
+    ghc = greedy_hill_climbing(graph, [])
+    max_vc_size = min(len(two_approx), len(ghc))
+    # best_val = max_vc_size
+    best_sol = np.array(ghc if len(two_approx) > len(ghc) else two_approx)
+
+    while max_vc_size > min_vc_size:
+        k = (max_vc_size + min_vc_size) // 2
+        print(max_vc_size, min_vc_size, k)
+        ga.update_k(k)
+        sol = ga.perform_ga(num_generations, population_size)
+        if is_vc(graph, sol):
+            best_sol = sol
+            max_vc_size = k
+        else:
+            sol = np.array(greedy_hill_climbing(graph, sol))
+            print(len(sol))
+            if len(sol) < max_vc_size:
+                max_vc_size = len(sol)
+                best_sol = sol
+            min_vc_size = k + 1
+    return best_sol.tolist()
+
+
+def greedy_neighbor(graph: Graph) -> List[int]:
+    neighbors = graph.get_neighbors()
+    vertex_degree = {k: len(v) for k, v in neighbors.items()}
+    edges_covered = set()
+    cur_state = set()
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        one_deg_v = [k for k, v in vertex_degree.items() if v == 1]
+        while one_deg_v:
+            rand_v = random.choice(one_deg_v)
+            vertex_degree[rand_v] = 0
+
+            n1 = neighbors[rand_v].pop()
+            edges_covered.add(frozenset({rand_v, n1}))
+            cur_state.add(n1)
+            n1_neighbors = neighbors[n1]
+            for n2 in n1_neighbors:
+                edges_covered.add(frozenset({n1, n2}))
+                vertex_degree[n2] -= 1
+                neighbors[n2] -= {n1}
+
+            # since we added n1 to VC, we need to make it's degree is zero in order to not randomly choose it in the
+            # next iteration
+            vertex_degree[n1] = 0
+
+            one_deg_v = [k for k, v in vertex_degree.items() if v == 1]
+
+        min_two_deg_v = [k for k, v in vertex_degree.items() if v >= 2]
+        if min_two_deg_v:
+            rand_v = random.choice(min_two_deg_v)
+            rand_v_neighbors = neighbors[rand_v]
+            for n1 in rand_v_neighbors:
+                edges_covered.add(frozenset({rand_v, n1}))
+                cur_state.add(n1)
+                neighbors[n1] -= {rand_v}
+                n1_neighbors = neighbors[n1]
+                vertex_degree[n1] = 0
+
+                for n2 in n1_neighbors:
+                    edges_covered.add(frozenset({n1, n2}))
+                    vertex_degree[n2] -= 1
+                    neighbors[n2] -= {n1}
+
+            vertex_degree[rand_v] = 0
+
+    return list(cur_state)

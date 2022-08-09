@@ -3,6 +3,7 @@ import random
 import matplotlib.pyplot as plt
 from typing import List, Dict, Set, FrozenSet, Tuple
 from copy import deepcopy
+from math import factorial
 
 
 class Graph:
@@ -26,7 +27,8 @@ class Graph:
         self._neighbors = neighbors
 
     def get_edges(self):
-        return deepcopy(self._edges)
+        # return deepcopy(self._edges)
+        return self._edges  # TODO Not a copy anymore
 
     def get_vertices(self):
         return self._vertices
@@ -107,3 +109,27 @@ class Graph:
         self._edges = new_edges
         self._num_edges = len(new_edges)
         self._neighbors = neighbors
+
+    def create_bad_greedy_graph(self, k: int):
+        factorial_k = factorial(k)
+        vertices_lists = []
+        num_vertices = 0
+        l = 0
+        while l < k:
+            vertices_lists.append([i for i in range(num_vertices, int(factorial_k / (k - l)) + num_vertices)])
+            num_vertices += len(vertices_lists[-1])
+            l += 1
+        upper_vertices = [i for i in range(num_vertices, factorial_k + num_vertices)]
+        num_vertices += factorial_k
+        edges = []
+        l = 1
+        while l <= k:
+            i = 0
+            j = -1
+            while i < factorial_k:
+                if i % l == 0:
+                    j += 1
+                edges.append((vertices_lists[k - l][j], upper_vertices[i]))
+                i += 1
+            l += 1
+        self.create_graph(num_vertices, edges)
