@@ -13,7 +13,7 @@ from vc_problem import *
 import time
 from genetic_algorithms import *
 import networkx as nx
-
+from utils import  *
 
 def create_random_graph(num_of_vertices):
     """
@@ -129,17 +129,17 @@ if __name__ == '__main__':
     # # time11 = time.time() - start11
     # # print("random weighted Special 2:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc11), is_vc(graph1, vc11), time11))
 
-    vc_new = VC_NEW_MUT(graph1)
-    start12 = time.time()
-    vc12 = vc_new.perform_ga(10000, math.ceil((num_vertices ** 0.6) / 3))
-    time12 = time.time() - start12
-    print("Genetic Alg NEW:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc12), is_vc(graph1, vc12), time12))
-
-    start13 = time.time()
-    vc13 = greedy_hill_climbing(graph1, vc12)
-    time13 = time.time() - start13 + time12
-    print("Genetic Alg NEW + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc13), is_vc(graph1, vc13), time13))
-
+    # vc_new = VC_NEW_MUT(graph1)
+    # start12 = time.time()
+    # vc12 = vc_new.perform_ga(10000, math.ceil((num_vertices ** 0.6) / 3))
+    # time12 = time.time() - start12
+    # print("Genetic Alg NEW:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc12), is_vc(graph1, vc12), time12))
+    #
+    # start13 = time.time()
+    # vc13 = greedy_hill_climbing(graph1, vc12)
+    # time13 = time.time() - start13 + time12
+    # print("Genetic Alg NEW + hill:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc13), is_vc(graph1, vc13), time13))
+    #
 
 
     # graph1.draw_vertex_cover(vc8)
@@ -187,6 +187,11 @@ if __name__ == '__main__':
     #
     # new_g.draw_vertex_cover(vc8)
 
+    f = open(".\\graph_files\\C125.9.mis", 'r')
+    graph2 = build_graph_from_file(f)
+    a = two_approximate_vertex_cover(graph2)
+    graph2.draw_vertex_cover(a)
+    f.close()
 
     # # print(len(vc3))
     # # print(len(vc4))

@@ -270,7 +270,6 @@ class VC_NEW_MUT(VC_GA):
         vertices = np.flatnonzero(state)
         for v in vertices:
             edges_covered |= self._vertex_edges[v]
-        punishment = 0 if len(edges_covered) == self._graph.get_num_edges() else 5
         return len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
