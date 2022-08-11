@@ -211,7 +211,7 @@ def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
 
 
 
-def ghc_weighted(graph: Graph, initial_state: List[int], num_iters) -> List[int]:
+def ghc_weighted(graph: Graph, num_iters) -> List[int]:
     edges = set(graph.get_edges())
     weights = {edge: 1 for edge in edges}
     best_cover = graph.get_vertices()
@@ -442,8 +442,8 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
         T = schedule(t)
         if T <= 0: # 1e-10:
             return list(cur_state) if best_sol is None else list(best_sol)
-        if t % 10000 == 0:
-            print(t)
+        # if t % 10000 == 0:
+            # print(t)
         k = random.randint(0, num_vertices - 1)
         if k in cur_state:
             new_edges_covered = edges_covered.difference({frozenset({k, v}) for v in neighbors_dict[k] if v not in cur_state})

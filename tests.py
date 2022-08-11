@@ -1,4 +1,15 @@
 import numpy as np
+from enum import Enum
+
+class Algorithm(Enum):
+    TWO_APPROX = 1  # graph
+    HC = 2   # Hill Climbing: graph, initial state
+    ITERATIVE = 3  # Iterative Hill Climbing: graph, num iterations
+    SA = 4  # Simulated Annealing: graph, initial state, schedule function
+    LBS = 5  # Local Beam Search: graph, num children
+    GA = 6  #
+
+print(Algorithm.TWO_APPROX.name)
 
 # abc = None
 # d = np.zeros((3, 3))
@@ -39,6 +50,15 @@ arr = np.array([1,2,3,10,11,12,13,14,15])
 see = {10,2,3, 103, 4,0, 1, 24, 2, 3,4, 1}
 print(np.array(list(see)))
 
+print(arr.max)
+
+a1 = np.array([1,0,1,0])
+a2 = np.array([1,0,0,1])
+print(np.argwhere(a1 | a2))
+
+
+
+
 # print(arr[np.array([0])])
 #
 #
@@ -58,4 +78,8 @@ print(np.array(list(see)))
 # print(prob_array)
 # print(state)
 
+
+strina = "aaa: nbbb"
+
+print(strina[strina.find(":") + 1:])
 

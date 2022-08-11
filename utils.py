@@ -11,6 +11,24 @@ import random
 from vc_problem import *
 import time
 import glob
+from enum import Enum
+import xlsxwriter as xl
+import inspect
+
+class Algorithm(Enum):
+    TWO_APPROX = 1  # graph
+    HC = 2   # Hill Climbing: graph, initial state
+    ITERATIVE = 3  # Iterative Hill Climbing: graph, num iterations
+    SA = 4  # Simulated Annealing: graph, initial state, schedule function
+    LBS = 5  # Local Beam Search: graph, num children
+    GA = 6  # Genetic Algorithms: num gens, population size
+
+class InitialState(Enum):
+    EMPTY = 1
+    FULL = 2
+    RANDOM = 3
+    TWO_APPROX_COVER = 4
+
 
 def create_plot(time_list: np.ndarray, vc_size_list: np.ndarray, is_vc_list: np.ndarray, iters: int, num_vertices: int):
     time_list_avg = time_list / iters
@@ -61,7 +79,8 @@ def create_random_graph(num_of_vertices):
         neighbors[vertex] = vertex_neighbors
     return Graph(edges_list, vertex_list, neighbors)
 
-def build_graph_from_file(file):
+def build_graph_from_file(file_name):
+    file = open(file_name, "r")
     first_line = file.readline().split()
     num_of_vertices = int(first_line[2])
     edges = []
@@ -72,41 +91,87 @@ def build_graph_from_file(file):
     graph = Graph()
     graph.create_graph(num_of_vertices, edges)
     print("finish graph build")
+    file.close()
     return graph
 
-def run_algorithm_on_files(files_names, num_of_iter, algorithm = None, params = None, genetic = False):
-    output = []
-    for i in range(len(files_names)):
-        file = open(files_names[i], "r")
-        graph = build_graph_from_file(file)
-        total_time = 0
-        total_vc_size = 0
-        for j in range(num_of_iter):
-            vc = []
-            start_time = 0
-            end_time = 0
-            if genetic:
-                ga = RegularVC_GA(graph)
-                start_time = time.time()
-                vc = ga.perform_ga(params[0], params[1])
-                end_time = time.time()
-            else:
-                start_time = time.time()
-                if params:
-                    vc = algorithm(graph, *params)
-                else:
-                    vc = algorithm(graph)
-                end_time = time.time()
-            total_time += (end_time - start_time)
-            total_vc_size += len(vc)
-        res = [files_names[i], num_of_iter, total_time/num_of_iter, total_vc_size/num_of_iter]
-        print(res)
-        output.append(res)
-    return output
+
+def run_algorithm_on_graph(params, graph_name: str, num_iter: int, algorithm_type: Algorithm,
+                           algorithm, initial_state: InitialState, run_hill_climbing=False):
+    total_time = 0
+    total_hc_time = 0
+    # total_vc_size = 0
+    res = [graph_name, algorithm.__name__, num_iter, initial_state.name, None, None, None, 0, "", "", 0, ""]
+    func = algorithm
+    rel_params = params
+    if algorithm_type == Algorithm.GA:
+        ga = algorithm(params[0])
+        func = ga.perform_ga
+        rel_params = params[1:]
+        res[4] = params[1]
+        res[5] = params[2]
+    elif algorithm_type == Algorithm.ITERATIVE:
+        res[4] = params[1]
+    elif algorithm_type == Algorithm.SA:
+        temp_func = params[2]
+        bla = inspect.getsourcelines(temp_func)[0][0]
+        res[6] = bla[bla.find(":") + 1:]
+    elif algorithm_type == Algorithm.LBS:
+        res[5] = params[1]
+    for j in range(num_iter):
+        vc, run_time = get_time_and_state(func, rel_params)
+        total_time += run_time
+        # total_vc_size += len(vc)
+        res[8] += str(len(vc)) + "|"
+        res[9] += str(is_vc(params[0], vc)) + "|"
+        if run_hill_climbing:
+            new_vc, extra_time = get_time_and_state(greedy_hill_climbing, [params[0], vc])
+            total_hc_time += extra_time
+            res[11] += str(len(new_vc)) + "|"
+    res[7] = total_time / num_iter
+    res[10] = res[7] + total_hc_time / num_iter
+    return res
 
 
-# running example
-# if __name__ == '__main__':
+def get_time_and_state(func, params):
+    start_time = time.time()
+    vc = func(*params)
+    end_time = time.time()
+    return vc, end_time - start_time
+
+
+def xl1(graph_name: str, graph):
+    column_names = ["graph_name", "algorithm_type", "num_iter", "initial_state", "num_inner_iters/generations",
+                    "population_size/num_children", "schedule", "avg_time", "vc_sizes", "is_vc", "avg_time_with_hc", "vc_sizes_with_hc"]
+    workbook = xl.Workbook(graph_name + ".xlsx")
+    worksheet = workbook.add_worksheet()
+    for i in range(len(column_names)):
+        worksheet.write(0, i, column_names[i])
+    results = []
+    results.append(run_algorithm_on_graph([graph], graph_name, 5, Algorithm.TWO_APPROX, two_approximate_vertex_cover, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, greedy_hill_climbing, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, stochastic_hill_climbing, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, first_choice_hill_climbing, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, 2], graph_name, 5, Algorithm.ITERATIVE, random_restart_hill_climbing, InitialState.RANDOM))
+    f = lambda x: 1 - 0.00001 * x
+    results.append(run_algorithm_on_graph([graph, [], f], graph_name, 5, Algorithm.SA, simulated_annealing, InitialState.EMPTY, True))
+    results.append(run_algorithm_on_graph([graph, 10], graph_name, 5, Algorithm.LBS, local_beam_search, InitialState.RANDOM))
+    results.append(run_algorithm_on_graph([graph, 100], graph_name, 5, Algorithm.ITERATIVE, ghc_weighted, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, ghc_weighted_special2, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, 10], graph_name, 5, Algorithm.ITERATIVE, random_restart_whc_special2, InitialState.EMPTY))
+    results.append(run_algorithm_on_graph([graph, 10000, math.ceil((graph.get_num_vertices() ** 0.6) / 3)], graph_name, 5, Algorithm.GA, RegularVC_GA, InitialState.RANDOM, True))
+    results.append(run_algorithm_on_graph([graph, 10000, math.ceil((graph.get_num_vertices() ** 0.6) / 3)], graph_name, 5, Algorithm.GA, RegularVC_GA2, InitialState.RANDOM, True))
+    results.append(run_algorithm_on_graph([graph, 10000, math.ceil((graph.get_num_vertices() ** 0.6) / 3)], graph_name, 5, Algorithm.GA, RegularVC_GA3, InitialState.RANDOM, True))
+    results.append(run_algorithm_on_graph([graph, 10000, math.ceil((graph.get_num_vertices() ** 0.6) / 3)], graph_name, 5, Algorithm.GA, VC_NEW_MUT, InitialState.RANDOM, True))
+    row = 1
+    for result in results:
+        for i in range(len(result)):
+            worksheet.write(row, i, result[i])
+        row += 1
+    workbook.close()
+
+if __name__ == '__main__':
+    g = build_graph_from_file(".\\graph_files\\C250.9.mis")
+    xl1("C250.9.mis", g)
 
 #     a = glob.glob(".\graph_files\*.mis")
 #     print(run_algorithm_on_files(a, 2, two_approximate_vertex_cover))
