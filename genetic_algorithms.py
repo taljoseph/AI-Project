@@ -98,7 +98,7 @@ class RegularVC_GA2(VC_GA):
         vertices = np.flatnonzero(state)
         for v in vertices:
             edges_covered |= self._vertex_edges[v]
-        return len(edges_covered) + state.size - vertices.size
+        return len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
         p = 0.5

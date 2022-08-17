@@ -427,12 +427,25 @@ def get_edges_covered(state: List[int], graph: Graph) -> Set[FrozenSet[int]]:
     return edges_covered
 
 
-def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
+def cost4(num_edges_covered, num_vertices_state, num_edges):
+    return 2 * num_edges_covered - num_vertices_state
+
+
+def cost5(num_edges_covered, num_vertices_state, num_edges):
+    return num_edges_covered - num_vertices_state
+
+
+def cost6(num_edges_covered, num_vertices_state, num_edges):
+    punishment = 5 if num_edges > num_edges_covered else 0
+    return num_edges_covered - num_vertices_state - punishment
+
+
+def simulated_annealing(graph: Graph, initial_state: List[int], schedule, cost):
     cur_state = set(initial_state)
     neighbors_dict = graph.get_neighbors()
     edges_covered = get_edges_covered(initial_state, graph)
     num_edges = graph.get_num_edges()
-    val = len(edges_covered) * 2 - len(cur_state)
+    cur_state_val = cost(len(edges_covered), len(cur_state), num_edges)
     t = 1
     best_sol = None
     best_sol_num_vertices = math.inf
@@ -447,25 +460,26 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule):
         k = random.randint(0, num_vertices - 1)
         if k in cur_state:
             new_edges_covered = edges_covered.difference({frozenset({k, v}) for v in neighbors_dict[k] if v not in cur_state})
-            new_val = len(new_edges_covered) * 2 - (len(cur_state) - 1)
+            # new_val = len(new_edges_covered) * 2 - (len(cur_state) - 1)
+            new_val = cost(len(new_edges_covered), len(cur_state) - 1, num_edges)
             p = 1
-            if len(new_edges_covered) < len(edges_covered):
-                p = math.e ** ((new_val - val)/T)
+            if new_val < cur_state_val:
+                p = math.e ** ((new_val - cur_state_val)/T)
             if random.random() < p:
                 cur_state.remove(k)
                 edges_covered = new_edges_covered
-                val = new_val
+                cur_state_val = new_val
 
         else:
             new_edges_covered = edges_covered | (get_edges_covered_by_vertex(k, neighbors_dict))
-            new_val = len(new_edges_covered) * 2 - len(cur_state) - 1
+            new_val = cost(len(new_edges_covered), len(cur_state) + 1, num_edges)
             p = 1
-            if len(new_edges_covered) == len(edges_covered):
-                p = math.e ** ((new_val - val)/T)
+            if new_val < cur_state_val:
+                p = math.e ** ((new_val - cur_state_val)/T)
             if random.random() < p:
                 cur_state.add(k)
                 edges_covered = new_edges_covered
-                val = new_val
+                cur_state_val = new_val
         if len(edges_covered) == num_edges and \
                 len(cur_state) < best_sol_num_vertices:
             best_sol = cur_state

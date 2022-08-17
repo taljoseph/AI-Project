@@ -153,7 +153,7 @@ def xl1(graph_name: str, graph):
     results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, first_choice_hill_climbing, InitialState.EMPTY))
     results.append(run_algorithm_on_graph([graph, 2], graph_name, 5, Algorithm.ITERATIVE, random_restart_hill_climbing, InitialState.RANDOM))
     f = lambda x: 1 - 0.00001 * x
-    results.append(run_algorithm_on_graph([graph, [], f], graph_name, 5, Algorithm.SA, simulated_annealing, InitialState.EMPTY, True))
+    results.append(run_algorithm_on_graph([graph, [], f, cost4], graph_name, 5, Algorithm.SA, simulated_annealing, InitialState.EMPTY, True))
     results.append(run_algorithm_on_graph([graph, 10], graph_name, 5, Algorithm.LBS, local_beam_search, InitialState.RANDOM))
     results.append(run_algorithm_on_graph([graph, 100], graph_name, 5, Algorithm.ITERATIVE, ghc_weighted, InitialState.EMPTY))
     results.append(run_algorithm_on_graph([graph, []], graph_name, 5, Algorithm.HC, ghc_weighted_special2, InitialState.EMPTY))
