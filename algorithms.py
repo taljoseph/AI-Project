@@ -193,9 +193,9 @@ def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
                     if val < min_val:
                         min_val = val
                 if len(neighbours[neighbour]) >= max_val:  # TODO maybe do average if equal
-                    cur_score += max_val
+                    cur_score += len(neighbours[neighbour])
                 else:
-                    cur_score += min_val
+                    cur_score += min(min_val, len(neighbours[neighbour]))
             weights[vertex] = cur_score
 
         if not weights:

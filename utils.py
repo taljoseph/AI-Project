@@ -169,9 +169,31 @@ def xl1(graph_name: str, graph):
         row += 1
     workbook.close()
 
+
+def xl2(graph_name: str, graph):
+    column_names = ["graph_name", "algorithm_type", "num_iter", "initial_state", "num_inner_iters/generations",
+                    "population_size/num_children", "schedule", "avg_time", "vc_sizes", "is_vc", "avg_time_with_hc", "vc_sizes_with_hc"]
+    workbook = xl.Workbook(graph_name + ".xlsx")
+    worksheet = workbook.add_worksheet()
+    for i in range(len(column_names)):
+        worksheet.write(0, i, column_names[i])
+    results = []
+    for i in range(10000, 10001):
+        for j in range(10, 11):
+            results.append(run_algorithm_on_graph([graph, i, j], graph_name, 1, Algorithm.GA, RegularVC_GA, InitialState.RANDOM, True))
+            results.append(run_algorithm_on_graph([graph, i, j], graph_name, 1, Algorithm.GA, RegularVC_GA2, InitialState.RANDOM, True))
+            results.append(run_algorithm_on_graph([graph, i, j], graph_name, 1, Algorithm.GA, RegularVC_GA3, InitialState.RANDOM, True))
+            results.append(run_algorithm_on_graph([graph, i, j], graph_name, 1, Algorithm.GA, VC_NEW_MUT, InitialState.RANDOM, True))
+    row = 1
+    for result in results:
+        for i in range(len(result)):
+            worksheet.write(row, i, result[i])
+        row += 1
+    workbook.close()
+
 if __name__ == '__main__':
-    g = build_graph_from_file(".\\graph_files\\C250.9.mis")
-    xl1("C250.9.mis", g)
+    g = build_graph_from_file(".\\graph_files\\MANN_a45.mis")
+    xl2("C250.9VERSION2.mis", g)
 
 #     a = glob.glob(".\graph_files\*.mis")
 #     print(run_algorithm_on_files(a, 2, two_approximate_vertex_cover))

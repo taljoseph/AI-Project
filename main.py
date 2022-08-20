@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     num_vertices = 500
     graph1 = Graph()
-    graph1.create_p_random_graph(num_vertices, 0.01)
+    graph1.create_p_random_graph(num_vertices, 0.0035)
     # graph1.create_nx_graph(200, math.ceil(19900 * 0.20))
 
 
@@ -97,12 +97,13 @@ if __name__ == '__main__':
     # # # time5 = time.time() - start5
     # # # print("Random Restart Hill Climbing:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc5), is_vc(graph1, vc5), time5))
     #
-    # vc_ga_punish = VCPunish_GA(graph1)
-    # start6 = time.time()
-    # vc6 = vc_ga_punish.perform_ga(10000, math.ceil((num_vertices ** 0.6) / 3))
-    # time6 = time.time() - start6
-    # print("Genetic Alg punish:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc6), is_vc(graph1, vc6), time6))
-    #
+    # vc_ga_punish = RegularVC_GA2(graph1)
+    # for i in range(1, 51):
+    #     start6 = time.time()
+    #     vc6 = vc_ga_punish.perform_ga(10000, p)
+    #     time6 = time.time() - start6
+    #     print("Genetic Alg punish:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc6), is_vc(graph1, vc6), time6))
+    # #
     # start7 = time.time()
     # vc7 = greedy_hill_climbing(graph1, vc6)
     # time7 = time.time() - start7 + time6
@@ -187,13 +188,28 @@ if __name__ == '__main__':
     #
     # new_g.draw_vertex_cover(vc8)
 
-    f = open(".\\graph_files\\C125.9.mis", 'r')
-    graph2 = build_graph_from_file(f)
-    a = two_approximate_vertex_cover(graph2)
-    graph2.draw_vertex_cover(a)
-    f.close()
+    # f = open(".\\graph_files\\C125.9.mis", 'r')
+    # graph2 = build_graph_from_file(f)
+    # a = two_approximate_vertex_cover(graph2)
+    # graph2.draw_vertex_cover(a)
+    # f.close()
 
     # # print(len(vc3))
     # # print(len(vc4))
     # graph1.draw_vertex_cover(vc3)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    vertices_num = [50, 80, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000]
+    edges_percentage = [0.1, 0.1, 0.08, 0.06, 0.03, 0.01, 0.007, 0.0035, 0.002, 0.001, 0.0008]
+    for j in range(10, len(vertices_num)):
+        graph1 = Graph()
+        graph1.create_p_random_graph(vertices_num[j], edges_percentage[j])
+        vc_ga_punish = RegularVC_GA2(graph1)
+        li = []
+        print(vertices_num[j])
+        start = time.time()
+        for i in range(1, 51):
+            print(i)
+            vc6 = greedy_hill_climbing(graph1, vc_ga_punish.perform_ga(10000, i))
+            li.append((i, len(vc6)))
+        print(li)
+        print(time.time() - start)
