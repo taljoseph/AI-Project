@@ -5,6 +5,11 @@ import math
 
 
 def softmax(fitness_array: np.ndarray):
+    """
+    The Softmax function. Returns an array of probabilities
+    @param fitness_array: The fitness array of all states
+    @return: fitness array after Softmax
+    """
     fitness_array -= fitness_array.max() + 1
     fitness_array = np.exp(fitness_array)
     fitness_array /= fitness_array.sum()
@@ -12,25 +17,57 @@ def softmax(fitness_array: np.ndarray):
 
 
 class VC_GA(ABC):
+    """
+    The Vertex Cover Genetic Algorithm Abstract Class
+    """
     def __init__(self, graph: Graph):
         self._graph = graph
 
     @abstractmethod
     def fitness(self, state: np.ndarray):
+        """
+        The fitness function
+        @param state: a state
+        @return: the fitness of the state
+        """
         pass
 
     @abstractmethod
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        """
+        The reproduce function. Receives 2 states and returns a new state
+        @param state1: the first state
+        @param state2: the second state
+        @param s1_fitness: fitness of first state
+        @param s2_fitness: fitness of second state
+        @return: a new state
+        """
         pass
 
     @abstractmethod
     def mutation(self, state: np.ndarray):
+        """
+        The mutation function
+        @param state: a state
+        @return: a new state
+        """
         pass
 
     def create_n_random_states(self, n: int) -> np.ndarray:
+        """
+        This function creates n random states
+        @param n: the number of random states
+        @return: n random states
+        """
         return np.random.binomial(1, 0.5, (n, self._graph.get_num_vertices()))
 
     def perform_ga(self, num_gens: int, population_size: int):
+        """
+        This function performs the genetic algorithm
+        @param num_gens: the number of generations
+        @param population_size: the size of the population
+        @return: a state
+        """
         # TODO best vc or best fitness, currently best fitness
         states = self.create_n_random_states(population_size)
 
@@ -68,6 +105,11 @@ class RegularVC_GA(VC_GA):
         self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
+        """
+        The fitness function. The cost function is 2 * len(edges_covered) - vertices.size
+        @param state: a state
+        @return: the fitness of the state
+        """
         edges_covered = set()
         vertices = np.flatnonzero(state)
         for v in vertices:
@@ -75,6 +117,15 @@ class RegularVC_GA(VC_GA):
         return 2 * len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        """
+        The reproduce function. Receives 2 states and returns a new state. With probability p chooses node from state1,
+        and with probability 1-p chooses node from state2. p = s1_fitness / (s1_fitness + s2_fitness)
+        @param state1: the first state
+        @param state2: the second state
+        @param s1_fitness: fitness of first state
+        @param s2_fitness: fitness of second state
+        @return: a new state
+        """
         p = 0.5
         if s1_fitness or s2_fitness:
             p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
@@ -83,6 +134,11 @@ class RegularVC_GA(VC_GA):
         return np.where(prob_array, state1, state2)
 
     def mutation(self, state: np.ndarray):
+        """
+        The mutation function. For each node in state, flips it with probability of 1 / num_vertices
+        @param state: a state
+        @return: a state
+        """
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
@@ -96,6 +152,11 @@ class RegularVC_GA2(VC_GA):
         self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
+        """
+        The fitness function. The cost funtion is len(edges_covered) - vertices.size
+        @param state: a state
+        @return: the fitness of the state
+        """
         edges_covered = set()
         vertices = np.flatnonzero(state)
         for v in vertices:
@@ -103,6 +164,15 @@ class RegularVC_GA2(VC_GA):
         return len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        """
+        The reproduce function. Receives 2 states and returns a new state. With probability p chooses node from state1,
+        and with probability 1-p chooses node from state2. p = s1_fitness / (s1_fitness + s2_fitness)
+        @param state1: the first state
+        @param state2: the second state
+        @param s1_fitness: fitness of first state
+        @param s2_fitness: fitness of second state
+        @return: a new state
+        """
         p = 0.5
         if s1_fitness or s2_fitness:
             p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
@@ -111,6 +181,11 @@ class RegularVC_GA2(VC_GA):
         return np.where(prob_array, state1, state2)
 
     def mutation(self, state: np.ndarray):
+        """
+        The mutation function. For each node in state, flips it with probability of 1 / num_vertices
+        @param state: a state
+        @return: a state
+        """
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
@@ -148,6 +223,12 @@ class VCPunish_GA(VC_GA):
         self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
+        """
+        The fitness function. The cost function is len(edges_covered) - vertices.size - punishment. Punishes the state
+        if it isn't a vertex cover
+        @param state: a state
+        @return: the fitness of the state
+        """
         edges_covered = set()
         vertices = np.flatnonzero(state)
         for v in vertices:
@@ -156,6 +237,15 @@ class VCPunish_GA(VC_GA):
         return len(edges_covered) - vertices.size - punishment
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        """
+        The reproduce function. Receives 2 states and returns a new state. With probability p chooses node from state1,
+        and with probability 1-p chooses node from state2. p = s1_fitness / (s1_fitness + s2_fitness)
+        @param state1: the first state
+        @param state2: the second state
+        @param s1_fitness: fitness of first state
+        @param s2_fitness: fitness of second state
+        @return: a new state
+        """
         p = 0.5
         if s1_fitness or s2_fitness:
             p = s1_fitness / (s1_fitness + s2_fitness)  # probability to choose vertex from first state
@@ -164,6 +254,13 @@ class VCPunish_GA(VC_GA):
         return np.where(prob_array, state1, state2)
 
     def mutation(self, state: np.ndarray):
+        """
+        The mutation function. With probability of 2/3 does mutation1, and with probability 1/3 does mutation2.
+        mutation1: For each node in state, flips it with probability of 2 / num_vertices
+        mutation2: add one random node that covers additional edges
+        @param state: a state
+        @return: a state
+        """
         p = random.random()
         if p < 0.7:
             num_vertices = self._graph.get_num_vertices()
