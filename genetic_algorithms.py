@@ -3,6 +3,7 @@ from Graph import *
 import numpy as np
 import math
 
+
 def softmax(fitness_array: np.ndarray):
     fitness_array -= fitness_array.max() + 1
     fitness_array = np.exp(fitness_array)
@@ -86,6 +87,7 @@ class RegularVC_GA(VC_GA):
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
 
+
 class RegularVC_GA2(VC_GA):
     def __init__(self, graph):
         super(RegularVC_GA2, self).__init__(graph)
@@ -136,7 +138,6 @@ class RegularVC_GA3(VC_GA):
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
-
 
 
 class VCPunish_GA(VC_GA):
@@ -295,3 +296,35 @@ class VC_NEW_MUT(VC_GA):
         prob_array = np.random.binomial(1, prob_array)
         state[rand_vertices] = np.where(prob_array, np.logical_not(state[rand_vertices]), state[rand_vertices])
         return state
+
+
+class RegularVC_GA4(VC_GA):
+    def __init__(self, graph):
+        super(RegularVC_GA4, self).__init__(graph)
+        vertices = self._graph.get_vertices()
+        neighbours = graph.get_neighbors()
+        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
+
+    def fitness(self, state: np.ndarray):
+        """
+        Cost function 1
+        :param state:
+        :return:
+        """
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        num_vertices = state.size
+        vertices_pun = 0
+        for v in vertices:
+            vertices_pun += (num_vertices - len(self._vertex_edges[v])) / num_vertices
+            edges_covered |= self._vertex_edges[v]
+        return 2.1 * len(edges_covered) - vertices_pun
+
+    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        ind = random.randint(1, state1.size)
+        return np.concatenate((state1[:ind], state2[ind:]))
+
+    def mutation(self, state: np.ndarray):
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
+        return np.where(prob_array, np.logical_not(state), state)

@@ -210,7 +210,6 @@ def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
     return state
 
 
-
 def ghc_weighted(graph: Graph, num_iters) -> List[int]:
     edges = set(graph.get_edges())
     weights = {edge: 1 for edge in edges}
