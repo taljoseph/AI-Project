@@ -1,7 +1,4 @@
 import copy
-import math
-
-from numpy import mat
 from genetic_algorithms import *
 from Graph import *
 
@@ -9,7 +6,8 @@ from Graph import *
 def two_approximate_vertex_cover(graph: Graph) -> List[int]:
     """
     This function finds a vertex cover using the 2-approximation algorithm
-    :return: a list of vertices that are a vertex cover
+    @param graph: A graph object
+    @return: a list of vertices representing a vertex cover
     """
     vertex_cover = []
     remaining_edges = set(graph.get_edges())
@@ -25,29 +23,224 @@ def two_approximate_vertex_cover(graph: Graph) -> List[int]:
     return vertex_cover
 
 
-def random_restart_whc_special(graph: Graph, num_iters: int) -> List[int]:
+def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    This function finds a vertex cover using the greedy hill climbing algorithm which operates similarly to
+    using a cost function of (2+eps) * |E'| - sum(|V|-deg(v))/|V|) over each v in V'.
+    @param graph: A graph object.
+    @param initial_state: The initial state.
+    @return: a list of vertices representing a vertex cover.
+    """
+    # init
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
+
+    # adding neighbours
+    edges_covered = get_edges_covered(initial_state, graph)
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        best_vertex = -1
+        most_edges_added = -1
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
+            if new_edges_added > most_edges_added:
+                best_vertex = v
+                most_edges_added = new_edges_added
+        cur_state.add(best_vertex)
+        rest_vertices_set.remove(best_vertex)
+        edges_covered |= get_edges_covered_by_vertex(best_vertex, neighbors_dict)
+
+    # removing neighbours
+    valid_neighbor = True
+    while valid_neighbor:
+        worst_v = -1
+        least_edges = math.inf
+        valid_neighbor = False
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
+            num_edges_covered = len(v_neighbors)
+            if num_edges_covered < least_edges and not v_neighbors.difference(cur_state):
+                worst_v = v
+                least_edges = num_edges_covered
+                valid_neighbor = True
+        if valid_neighbor:
+            cur_state.remove(worst_v)
+    return list(cur_state)
+
+
+def stochastic_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    This function finds a vertex cover using the stochastic hill climbing algorithm, which works similarly
+    to using the cost function above.
+    @param graph: A graph object.
+    @param initial_state: The initial state.
+    @return: a list of vertices representing a vertex cover.
+    """
+    # init
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
+
+    # adding neighbours
+    edges_covered = get_edges_covered(initial_state, graph)
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        good_vertex = []
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
+            if new_edges_added:
+                good_vertex.append(v)
+        rand_vertex = random.choice(good_vertex)
+        cur_state.add(rand_vertex)
+        rest_vertices_set.remove(rand_vertex)
+        edges_covered |= get_edges_covered_by_vertex(rand_vertex, neighbors_dict)
+
+    # removing neighbours
+    valid_neighbor = True
+    while valid_neighbor:
+        worst_vertices = []
+        valid_neighbor = False
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
+            if not v_neighbors.difference(cur_state):
+                worst_vertices.append(v)
+                valid_neighbor = True
+        if valid_neighbor:
+            cur_state.remove(random.choice(worst_vertices))
+    return list(cur_state)
+
+
+def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+    """
+    Finds a vertex cover using first choice hill climbing algorithm, works similarly to using the cost function
+    above.
+    @param graph: The graph object.
+    @param initial_state: The initial state.
+    @return: A list of vertices representing a vertex cover.
+    """
+    # init
+    cur_state = set(initial_state)
+    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    neighbors_dict = graph.get_neighbors()
+
+    # adding neighbours
+    edges_covered = get_edges_covered(initial_state, graph)
+    num_edges = graph.get_num_edges()
+    while len(edges_covered) < num_edges:
+        for v in rest_vertices_set:
+            new_edges_added = len(neighbors_dict[v].difference(cur_state))
+            if new_edges_added:
+                cur_state.add(v)
+                rest_vertices_set.remove(v)
+                edges_covered |= get_edges_covered_by_vertex(v, neighbors_dict)
+                break
+
+    # removing neighbours
+    valid_neighbor = True
+    while valid_neighbor:
+        valid_neighbor = False
+        for v in cur_state:
+            v_neighbors = neighbors_dict[v]
+            if not v_neighbors.difference(cur_state):
+                cur_state.remove(v)
+                valid_neighbor = True
+                break
+    return list(cur_state)
+
+
+def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
+    """
+    Finds a vertex cover using random restart hill climbing algorithm, works similarly to using the cost function
+    above.
+    @param graph: The graph object.
+    @param num_iters: The number of iterations.
+    @return: A list of vertices representing a vertex cover.
+    """
     best_vc = []
     len_of_best = math.inf
     for i in range(num_iters):
         init_state = create_random_initial_state(graph)
-        cur_vc = ghc_weighted_special(graph, init_state)
+        cur_vc = greedy_hill_climbing(graph, init_state)
         if len(cur_vc) < len_of_best:
             best_vc = cur_vc
             len_of_best = len(cur_vc)
     return best_vc
 
-def random_restart_whc_special2(graph: Graph, num_iters: int) -> List[int]:
-    best_vc = []
-    len_of_best = math.inf
+
+def ghc_weighted_edges(graph: Graph, num_iters) -> List[int]:
+    """
+    Calculates weights on edges, increasing the weight for each edge that isn't covered in the following round
+    and runs Hill Climbing with the cost function being the sum of the weights of the relevant edges on each vertex.
+    @param graph: The graph object
+    @param num_iters: Number of iterations to run this algorithm, keeping the best vertex cover found so far
+    @return: The best vertex found thus far.
+    """
+    # init
+    edges = set(graph.get_edges())
+    weights = {edge: 1 for edge in edges}
+    best_cover = graph.get_vertices()
+    neighbours = graph.get_neighbors()
     for i in range(num_iters):
-        cur_vc = ghc_weighted_special2(graph, [])
-        if len(cur_vc) < len_of_best:
-            best_vc = cur_vc
-            len_of_best = len(cur_vc)
-    return best_vc
+        remaining_vertices = set(graph.get_vertices())
+        remaining_edges = copy.deepcopy(edges)
+        cur_state = set()
+
+        # adding neighbours
+        while remaining_edges:
+            cur_best_vertices = []
+            cur_best_val = 0
+            for vertex in remaining_vertices:
+                vertex_val = 0
+                z = neighbours[vertex]
+                for neighbour in z:
+                    if neighbour in remaining_vertices:
+                        vertex_val += weights[frozenset({vertex, neighbour})]
+                if vertex_val > cur_best_val:
+                    cur_best_val = vertex_val
+                    cur_best_vertices = [vertex]
+                elif vertex_val == cur_best_val:
+                    cur_best_vertices.append(vertex)
+            rand_vertex = random.choice(cur_best_vertices)
+            cur_state.add(rand_vertex)
+            remaining_vertices.remove(rand_vertex)
+            remaining_edges -= {frozenset({rand_vertex, u}) for u in neighbours[rand_vertex]}
+            for edge in remaining_edges:
+                weights[edge] += 1
+
+        # removing neighbors
+        valid_neighbor = True
+        while valid_neighbor:
+            worst_vertices = []
+            least_edges = math.inf
+            valid_neighbor = False
+            for v in cur_state:
+                v_neighbours = neighbours[v]
+                num_edges_covered = len(v_neighbours)
+                if num_edges_covered <= least_edges and not v_neighbours.difference(cur_state):
+                    if num_edges_covered == least_edges:
+                        worst_vertices.append(v)
+                    else:
+                        least_edges = num_edges_covered
+                        worst_vertices = [v]
+                    valid_neighbor = True
+            if valid_neighbor:
+                rand_vertex = random.choice(worst_vertices)
+                cur_state.remove(rand_vertex)
+        if len(best_cover) > len(cur_state):
+            best_cover = cur_state
+    return list(best_cover)
 
 
-def ghc_weighted_special(graph: Graph, initial_state: List[int]):
+def ghc_weighted_edges_2(graph: Graph, initial_state: List[int]):
+    """
+    Calculates weights on edges based on a certain function and runs
+    Hill Climbing with the cost function being the sum of the weights of the relevant edges on each vertex.
+    @param graph: The graph object.
+    @param initial_state: The beginning.
+    @return: The best vertex found thus far.
+    """
+    # init
     state = set(initial_state)
     neighbours = graph.get_neighbors()
     edges = set(graph.get_edges())
@@ -113,11 +306,121 @@ def ghc_weighted_special(graph: Graph, initial_state: List[int]):
             can_reduce_cover = False
         else:
             state.remove(cur_best_vertex)
-
     return state
 
 
-def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
+def ghc_weighted_vertices(graph: Graph, initial_state: List[int]):
+    """
+    Calculates weights on the vertices based on a certain function and runs
+    Hill Climbing with the cost function being the sum of the weights of the relevant vertices.
+    @param graph: The graph object.
+    @param initial_state: The beginning.
+    @return: The best vertex found thus far.
+    """
+    state = set(initial_state)
+    neighbours = graph.get_neighbors()
+    edges = set(graph.get_edges())
+    remaining_edges = copy.deepcopy(edges) - get_edges_covered(initial_state, graph)
+    remaining_vertices = set(graph.get_vertices()) - state
+    weights = {vertex: 0 for vertex in remaining_vertices}
+    remaining_neighbours = {vertex: set() for vertex in remaining_vertices}
+    for edge in remaining_edges:
+        v1, v2 = edge
+        remaining_neighbours[v1].add(v2)
+        remaining_neighbours[v2].add(v1)
+
+    while remaining_edges:
+        precious_vertex = False
+        for vertex in remaining_vertices:
+            weights[vertex] = 0
+        for vertex in remaining_vertices:
+            if len(remaining_neighbours[vertex]) == 1:
+                v, = remaining_neighbours[vertex]
+                weights[v] = math.inf
+                precious_vertex = True
+        if not precious_vertex:
+            for vertex in remaining_vertices:
+                max_val = -math.inf
+                min_val = math.inf
+                for neighbour in remaining_neighbours[vertex]:
+                    num_rel_neighbours = len(remaining_neighbours[neighbour])
+                    if num_rel_neighbours > max_val:
+                        max_val = num_rel_neighbours
+                    elif num_rel_neighbours < min_val:
+                        min_val = num_rel_neighbours
+                num_neighbours = len(remaining_neighbours[vertex])
+                if num_neighbours == 0:
+                    continue
+                elif num_neighbours >= max_val:
+                    score = min_val
+                else:
+                    score = max_val
+                for neighbour in remaining_neighbours[vertex]:
+                    weights[neighbour] += score
+        # best_vertex = max(weights, key=weights.get)
+        max_val = max(weights.values())
+        best_vertices = [k for k, v in weights.items() if v == max_val]
+        best_vertex = random.choice(best_vertices)
+        state.add(best_vertex)
+        weights[best_vertex] = 0
+        for neighbour in remaining_neighbours[best_vertex]:
+            remaining_neighbours[neighbour].remove(best_vertex)
+            remaining_edges.remove(frozenset({best_vertex, neighbour}))
+        del remaining_neighbours[best_vertex]
+        remaining_vertices.remove(best_vertex)
+
+    # Reduce vertex cover
+
+    weights = {}
+    neighbours_in_state = {vertex: set() for vertex in state}
+    for vertex in state:
+        neighbours_in_state[vertex] = neighbours[vertex].intersection(state)
+
+    can_reduce_cover = True
+    while can_reduce_cover:
+        for vertex in state:
+            cant_remove_vertex = False
+            for neighbour in neighbours[vertex]:
+                if neighbour not in state:
+                    cant_remove_vertex = True
+                    break
+            if cant_remove_vertex:
+                continue
+            # can remove vertex, set its weights:
+            num_neighbours = len(neighbours_in_state[vertex])
+            if num_neighbours == 0:
+                weights[vertex] = math.inf
+                break
+
+            score = 0
+            for neighbour in neighbours_in_state[vertex]:
+                max_val = -math.inf
+                min_val = math.inf
+                for n_o_n in neighbours_in_state[neighbour]:
+                    num_rel_neighbours = len(neighbours_in_state[n_o_n])
+                    if num_rel_neighbours > max_val:
+                        max_val = num_rel_neighbours
+                    elif num_rel_neighbours < min_val:
+                        min_val = num_rel_neighbours
+                if num_neighbours >= max_val:
+                    score += num_neighbours
+                else:
+                    score += min_val
+            weights[vertex] = score
+
+        if not weights:
+            can_reduce_cover = False
+        else:
+            best_vertex = max(weights, key=weights.get)
+            state.remove(best_vertex)
+            del weights[best_vertex]
+            for neighbour in neighbours_in_state[best_vertex]:
+                neighbours_in_state[neighbour].remove(best_vertex)
+            del neighbours_in_state[best_vertex]
+    return state
+
+
+def ghc_weighted_vertices_old(graph: Graph, initial_state: List[int]):
     state = set(initial_state)
     neighbours = graph.get_neighbors()
     edges = set(graph.get_edges())
@@ -209,172 +512,35 @@ def ghc_weighted_special2(graph: Graph, initial_state: List[int]):
                     del weights[v]
     return state
 
-
-def ghc_weighted(graph: Graph, num_iters) -> List[int]:
-    edges = set(graph.get_edges())
-    weights = {edge: 1 for edge in edges}
-    best_cover = graph.get_vertices()
-    neighbours = graph.get_neighbors()
-    for i in range(num_iters):
-        remaining_vertices = set(graph.get_vertices())
-        remaining_edges = copy.deepcopy(edges)
-        cur_state = set()
-        while remaining_edges:
-            cur_best_vertex = None
-            cur_best_val = 0
-            for vertex in remaining_vertices:
-                vertex_val = 0
-                z = neighbours[vertex]
-                for neighbour in z:
-                    if neighbour in remaining_vertices:
-                        vertex_val += weights[frozenset({vertex, neighbour})]
-                if vertex_val > cur_best_val:
-                    cur_best_val = vertex_val
-                    cur_best_vertex = vertex
-            cur_state.add(cur_best_vertex)
-            remaining_vertices.remove(cur_best_vertex)
-            remaining_edges -= {frozenset({cur_best_vertex, u}) for u in neighbours[cur_best_vertex]}
-            for edge in remaining_edges:
-                weights[edge] += 1
-
-        # removing neighbors
-        valid_neighbor = True
-        while valid_neighbor:
-            worst_v = -1
-            least_edges = math.inf
-            valid_neighbor = False
-            for v in cur_state:
-                v_neighbours = neighbours[v]
-                num_edges_covered = len(v_neighbours)
-                if num_edges_covered < least_edges and not v_neighbours.difference(cur_state):
-                    worst_v = v
-                    least_edges = num_edges_covered
-                    valid_neighbor = True
-            if valid_neighbor:
-                cur_state.remove(worst_v)
-        if len(best_cover) > len(cur_state):
-            best_cover = cur_state
-    return list(best_cover)
-
-
-def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
+def multirun_whc_weighted_edges_2(graph: Graph, num_iters: int) -> List[int]:
     """
-    This function finds a vertex cover using the greedy hill climbing algorithm
-    return: a list of vertices that are a vertex cover
+    Runs whc_weighted_edged_2 multiple times.
+    @param graph: Graph object.
+    @param num_iters: Number of iterations.
+    @return: The best vertex cover found from all iterations.
     """
-    cur_state = set(initial_state)
-    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
-    neighbors_dict = graph.get_neighbors()
-    #adding neighbors
-    edges_covered = get_edges_covered(initial_state, graph)
-    num_edges = graph.get_num_edges()
-    while len(edges_covered) < num_edges:
-        best_vertex = -1
-        most_edges_added = -1
-        for v in rest_vertices_set:
-            new_edges_added = len(neighbors_dict[v].difference(cur_state))
-            if new_edges_added > most_edges_added:
-                best_vertex = v
-                most_edges_added = new_edges_added
-        cur_state.add(best_vertex)
-        rest_vertices_set.remove(best_vertex)
-        edges_covered |= get_edges_covered_by_vertex(best_vertex, neighbors_dict)
-
-    # removing neighbors
-    valid_neighbor = True
-    while valid_neighbor:
-        worst_v = -1
-        least_edges = math.inf
-        valid_neighbor = False
-        for v in cur_state:
-            v_neighbors = neighbors_dict[v]
-            num_edges_covered = len(v_neighbors)
-            if num_edges_covered < least_edges and not v_neighbors.difference(cur_state):
-                worst_v = v
-                least_edges = num_edges_covered
-                valid_neighbor = True
-        if valid_neighbor:
-            cur_state.remove(worst_v)
-    return list(cur_state)
-
-
-def stochastic_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
-    """
-    This function finds a vertex cover using the stochastic hill climbing algorithm
-    return: a list of vertices that are a vertex cover
-    """
-    cur_state = set(initial_state)
-    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
-    neighbors_dict = graph.get_neighbors()
-    #adding neighbors
-    edges_covered = get_edges_covered(initial_state, graph)
-    num_edges = graph.get_num_edges()
-    while len(edges_covered) < num_edges:
-        good_vertex = []
-        for v in rest_vertices_set:
-            new_edges_added = len(neighbors_dict[v].difference(cur_state))
-            if new_edges_added:
-                good_vertex.append(v)
-        rand_vertex = random.choice(good_vertex)
-        cur_state.add(rand_vertex)
-        rest_vertices_set.remove(rand_vertex)
-        edges_covered |= get_edges_covered_by_vertex(rand_vertex, neighbors_dict)
-
-    # removing neighbors
-    valid_neighbor = True
-    while valid_neighbor:
-        worst_vertex = []
-        valid_neighbor = False
-        for v in cur_state:
-            v_neighbors = neighbors_dict[v]
-            if not v_neighbors.difference(cur_state):
-                worst_vertex.append(v)
-                valid_neighbor = True
-        if valid_neighbor:
-            cur_state.remove(random.choice(worst_vertex))
-    return list(cur_state)
-
-
-def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
-    """
-    This function finds a vertex cover using the greedy hill climbing algorithm
-    return: a list of vertices that are a vertex cover
-    """
-    cur_state = set(initial_state)
-    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
-    neighbors_dict = graph.get_neighbors()
-    #adding neighbors
-    edges_covered = get_edges_covered(initial_state, graph)
-    num_edges = graph.get_num_edges()
-    while len(edges_covered) < num_edges:
-        for v in rest_vertices_set:
-            new_edges_added = len(neighbors_dict[v].difference(cur_state))
-            if new_edges_added:
-                cur_state.add(v)
-                rest_vertices_set.remove(v)
-                edges_covered |= get_edges_covered_by_vertex(v, neighbors_dict)
-                break
-
-    # removing neighbors
-    valid_neighbor = True
-    while valid_neighbor:
-        valid_neighbor = False
-        for v in cur_state:
-            v_neighbors = neighbors_dict[v]
-            if not v_neighbors.difference(cur_state):
-                cur_state.remove(v)
-                valid_neighbor = True
-                break
-    return list(cur_state)
-
-
-def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
-    init_state = []
     best_vc = []
     len_of_best = math.inf
     for i in range(num_iters):
         init_state = create_random_initial_state(graph)
-        cur_vc = greedy_hill_climbing(graph, init_state)
+        cur_vc = ghc_weighted_edges_2(graph, init_state)
+        if len(cur_vc) < len_of_best:
+            best_vc = cur_vc
+            len_of_best = len(cur_vc)
+    return best_vc
+
+
+def multirun_whc_weighted_vertices(graph: Graph, num_iters: int) -> List[int]:
+    """
+    Runs whc_weighted_vertices multiple times.
+    @param graph: Graph object.
+    @param num_iters: Number of iterations.
+    @return: The best vertex cover found from all iterations.
+    """
+    best_vc = []
+    len_of_best = math.inf
+    for i in range(num_iters):
+        cur_vc = ghc_weighted_vertices(graph, [])
         if len(cur_vc) < len_of_best:
             best_vc = cur_vc
             len_of_best = len(cur_vc)
