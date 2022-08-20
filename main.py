@@ -198,18 +198,32 @@ if __name__ == '__main__':
     # # print(len(vc4))
     # graph1.draw_vertex_cover(vc3)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
-    vertices_num = [50, 80, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000]
-    edges_percentage = [0.1, 0.1, 0.08, 0.06, 0.03, 0.01, 0.007, 0.0035, 0.002, 0.001, 0.0008]
-    for j in range(10, len(vertices_num)):
-        graph1 = Graph()
-        graph1.create_p_random_graph(vertices_num[j], edges_percentage[j])
-        vc_ga_punish = RegularVC_GA2(graph1)
-        li = []
-        print(vertices_num[j])
-        start = time.time()
-        for i in range(1, 51):
-            print(i)
-            vc6 = greedy_hill_climbing(graph1, vc_ga_punish.perform_ga(10000, i))
-            li.append((i, len(vc6)))
-        print(li)
-        print(time.time() - start)
+#     vertices_num = [50, 80, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000]
+#     edges_percentage = [0.1, 0.1, 0.08, 0.06, 0.03, 0.01, 0.007, 0.0035, 0.002, 0.001, 0.0008]
+#     for j in range(10, len(vertices_num)):
+#         graph1 = Graph()
+#         graph1.create_p_random_graph(vertices_num[j], edges_percentage[j])
+#         vc_ga_punish = RegularVC_GA2(graph1)
+#         li = []
+#         print(vertices_num[j])
+#         start = time.time()
+#         for i in range(1, 51):
+#             print(i)
+#             vc6 = greedy_hill_climbing(graph1, vc_ga_punish.perform_ga(10000, i))
+#             li.append((i, len(vc6)))
+#         print(li)
+#         print(time.time() - start)
+    graph2 = Graph()
+    graph2.create_old_city_graph()
+
+
+    # graph2 = build_graph_from_file(".\\graph_files\\C250.9.mis")
+    start4 = time.time()
+    vc4 = multirun_whc_weighted_vertices(graph2, 1)
+    time4 = time.time() - start4
+    print("Weighted vertices new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph2, vc4), time4))
+
+    # start5 = time.time()
+    # vc5 = ghc_weighted_vertices_old(graph2, [])
+    # time5 = time.time() - start5
+    # print("Weighted vertices old:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc5), is_vc(graph2, vc5), time5))
