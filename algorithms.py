@@ -40,32 +40,39 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     edges_covered = get_edges_covered(initial_state, graph)
     num_edges = graph.get_num_edges()
     while len(edges_covered) < num_edges:
-        best_vertex = -1
+        best_vertices = []
         most_edges_added = -1
         for v in rest_vertices_set:
             new_edges_added = len(neighbors_dict[v].difference(cur_state))
             if new_edges_added > most_edges_added:
-                best_vertex = v
+                best_vertices = [v]
                 most_edges_added = new_edges_added
-        cur_state.add(best_vertex)
-        rest_vertices_set.remove(best_vertex)
-        edges_covered |= get_edges_covered_by_vertex(best_vertex, neighbors_dict)
+            elif new_edges_added == most_edges_added:
+                best_vertices.append(v)
+        rand_vertex = random.choice(best_vertices)
+        cur_state.add(rand_vertex)
+        rest_vertices_set.remove(rand_vertex)
+        edges_covered |= get_edges_covered_by_vertex(rand_vertex, neighbors_dict)
 
     # removing neighbours
     valid_neighbor = True
     while valid_neighbor:
-        worst_v = -1
+        worst_vertices = []
         least_edges = math.inf
         valid_neighbor = False
         for v in cur_state:
             v_neighbors = neighbors_dict[v]
             num_edges_covered = len(v_neighbors)
-            if num_edges_covered < least_edges and not v_neighbors.difference(cur_state):
-                worst_v = v
-                least_edges = num_edges_covered
+            if num_edges_covered <= least_edges and not v_neighbors.difference(cur_state):
+                if num_edges_covered == least_edges:
+                    worst_vertices.append(v)
+                else:
+                    worst_vertices = [v]
+                    least_edges = num_edges_covered
                 valid_neighbor = True
         if valid_neighbor:
-            cur_state.remove(worst_v)
+            rand_vertex = random.choice(worst_vertices)
+            cur_state.remove(rand_vertex)
     return list(cur_state)
 
 
