@@ -22,6 +22,16 @@ class VC_GA(ABC):
     """
     def __init__(self, graph: Graph):
         self._graph = graph
+        vertices = self._graph.get_vertices()
+        neighbours = graph.get_neighbors()
+        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
+
+    def fitness_helper(self, state):
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        for v in vertices:
+            edges_covered |= self._vertex_edges[v]
+        return edges_covered, vertices
 
     @abstractmethod
     def fitness(self, state: np.ndarray):
@@ -68,7 +78,6 @@ class VC_GA(ABC):
         @param population_size: the size of the population
         @return: a state
         """
-        # TODO best vc or best fitness, currently best fitness
         states = self.create_n_random_states(population_size)
 
         fitness_array = np.zeros(population_size)
@@ -100,9 +109,6 @@ class VC_GA(ABC):
 class RegularVC_GA(VC_GA):
     def __init__(self, graph):
         super(RegularVC_GA, self).__init__(graph)
-        vertices = self._graph.get_vertices()
-        neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
         """
@@ -110,10 +116,7 @@ class RegularVC_GA(VC_GA):
         @param state: a state
         @return: the fitness of the state
         """
-        edges_covered = set()
-        vertices = np.flatnonzero(state)
-        for v in vertices:
-            edges_covered |= self._vertex_edges[v]
+        edges_covered, vertices = self.fitness_helper(state)
         return 2 * len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
@@ -147,9 +150,6 @@ class RegularVC_GA(VC_GA):
 class RegularVC_GA2(VC_GA):
     def __init__(self, graph):
         super(RegularVC_GA2, self).__init__(graph)
-        vertices = self._graph.get_vertices()
-        neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
         """
@@ -157,10 +157,7 @@ class RegularVC_GA2(VC_GA):
         @param state: a state
         @return: the fitness of the state
         """
-        edges_covered = set()
-        vertices = np.flatnonzero(state)
-        for v in vertices:
-            edges_covered |= self._vertex_edges[v]
+        edges_covered, vertices = self.fitness_helper(state)
         return len(edges_covered) - vertices.size
 
     def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
@@ -191,36 +188,9 @@ class RegularVC_GA2(VC_GA):
         return np.where(prob_array, np.logical_not(state), state)
 
 
-class RegularVC_GA3(VC_GA):
-    def __init__(self, graph):
-        super(RegularVC_GA3, self).__init__(graph)
-        vertices = self._graph.get_vertices()
-        neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
-
-    def fitness(self, state: np.ndarray):
-        edges_covered = set()
-        vertices = np.flatnonzero(state)
-        for v in vertices:
-            edges_covered |= self._vertex_edges[v]
-        return len(edges_covered) + state.size - vertices.size
-
-    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
-        ind = state1.size // 2
-        return np.concatenate((state1[:ind], state2[ind:]))
-
-    def mutation(self, state: np.ndarray):
-        num_vertices = self._graph.get_num_vertices()
-        prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
-        return np.where(prob_array, np.logical_not(state), state)
-
-
 class VCPunish_GA(VC_GA):
     def __init__(self, graph):
         super(VCPunish_GA, self).__init__(graph)
-        vertices = self._graph.get_vertices()
-        neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
         """
@@ -229,10 +199,7 @@ class VCPunish_GA(VC_GA):
         @param state: a state
         @return: the fitness of the state
         """
-        edges_covered = set()
-        vertices = np.flatnonzero(state)
-        for v in vertices:
-            edges_covered |= self._vertex_edges[v]
+        edges_covered, vertices = self.fitness_helper(state)
         punishment = 0 if len(edges_covered) == self._graph.get_num_edges() else 5
         return len(edges_covered) - vertices.size - punishment
 
@@ -276,22 +243,32 @@ class VCPunish_GA(VC_GA):
             edges_not_covered = list(edges_not_covered)
             if edges_not_covered:
                 rand_edge = np.random.choice(np.arange(len(edges_not_covered)), size=1)[0]
-                # a = edges_not_covered[rand_edge[0]]
                 ver = random.sample(edges_not_covered[rand_edge], 1)[0]
-                # a = random.sample(edges_not_covered[3], 1)[0]
-                # for i in rand_edges:
-                    # a = edges_not_covered[i]
-                    # ver.add(random.sample(edges_not_covered[i], 1)[0])
-                # ver = np.array(list(ver))
-                # rand_v = np.random.choice(np.flatnonzero(state), size=len(ver), replace=False)
-                # state[rand_v] = 0
                 state[ver] = 1
-            # negs = np.argwhere(state == False).flatten()
-            # change = np.random.choice(negs, size=1, replace=False)
-            # state[change] = 1
-            # return state
         return state
 
+##############################################################################################
+##### EXTRA IMPLEMENTATIONS ####
+
+class RegularVC_GA3(VC_GA):
+    def __init__(self, graph):
+        super(RegularVC_GA3, self).__init__(graph)
+
+    def fitness(self, state: np.ndarray):
+        edges_covered = set()
+        vertices = np.flatnonzero(state)
+        for v in vertices:
+            edges_covered |= self._vertex_edges[v]
+        return len(edges_covered) + state.size - vertices.size
+
+    def reproduce(self, state1: np.ndarray, state2: np.ndarray, s1_fitness: float, s2_fitness: float):
+        ind = state1.size // 2
+        return np.concatenate((state1[:ind], state2[ind:]))
+
+    def mutation(self, state: np.ndarray):
+        num_vertices = self._graph.get_num_vertices()
+        prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
+        return np.where(prob_array, np.logical_not(state), state)
 
 class FixedSizeVCGA(VC_GA):
     def __init__(self, graph, k):
@@ -359,9 +336,6 @@ class FixedSizeVCGA(VC_GA):
 class VC_NEW_MUT(VC_GA):
     def __init__(self, graph):
         super(VC_NEW_MUT, self).__init__(graph)
-        self._vertices = self._graph.get_vertices()
-        self._neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in self._neighbours[v]} for v in self._vertices}
 
     def fitness(self, state: np.ndarray):
         edges_covered = set()
@@ -398,16 +372,8 @@ class VC_NEW_MUT(VC_GA):
 class RegularVC_GA4(VC_GA):
     def __init__(self, graph):
         super(RegularVC_GA4, self).__init__(graph)
-        vertices = self._graph.get_vertices()
-        neighbours = graph.get_neighbors()
-        self._vertex_edges = {v: {frozenset({v, u}) for u in neighbours[v]} for v in vertices}
 
     def fitness(self, state: np.ndarray):
-        """
-        Cost function 1
-        :param state:
-        :return:
-        """
         edges_covered = set()
         vertices = np.flatnonzero(state)
         num_vertices = state.size
