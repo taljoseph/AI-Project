@@ -6,6 +6,7 @@
 !.gitignore
 !**.py
 !**.pdf
+!results
 
 # OS Stuff
 .DS_Store

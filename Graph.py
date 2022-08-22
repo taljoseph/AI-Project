@@ -40,7 +40,8 @@ class Graph:
         self._vertices = new_vertices
 
     def get_neighbors(self):
-        return deepcopy(self._neighbors)
+        return self._neighbors
+        # return deepcopy(self._neighbors)
 
     def set_neighbors(self, new_neighbors: Dict[int, List[int]]):
         self._neighbors = new_neighbors
