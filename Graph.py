@@ -2,7 +2,6 @@ import networkx as nx
 import random
 import matplotlib.pyplot as plt
 from typing import List, Dict, Set, FrozenSet, Tuple
-from copy import deepcopy
 from math import factorial
 
 
@@ -27,32 +26,62 @@ class Graph:
         self._neighbors = neighbors
 
     def get_edges(self):
+        """
+        :return: graph's edges.
+        """
         return self._edges
 
     def get_vertices(self):
+        """
+        :return: graph's vertices
+        """
         return self._vertices
 
     def set_edges(self, new_edges: List[FrozenSet[int]]):
+        """
+        Set graph's edges.
+        :param new_edges: new edges.
+        """
         self._edges = new_edges
         self._num_edges = len(new_edges)
 
     def set_vertices(self, new_vertices: List[int]):
+        """
+        Set graph's vertices.
+        :param new_vertices: new vertices.
+        """
         self._vertices = new_vertices
         self._num_vertices = len(new_vertices)
 
     def get_neighbors(self):
+        """
+        :return: Returns the neighbours - {vertex: Set[vertices]}
+        """
         return self._neighbors
 
     def set_neighbors(self, new_neighbors: Dict[int, List[int]]):
+        """
+        Sets the neighbours.
+        :param new_neighbors: new neighbours.
+        """
         self._neighbors = new_neighbors
 
     def get_num_vertices(self):
+        """
+        :return: Number of vertices in the graph.
+        """
         return self._num_vertices
 
     def get_num_edges(self):
+        """
+        :return: Number of edges in the graph.
+        """
         return self._num_edges
 
     def __str__(self):
+        """
+        :return: Graph's string representation - vertices, edges, neighbours
+        """
         return "Vertices: " + str(self._vertices) + "\nEdges: " + str(self._edges) + "\nNeighbors: " + \
                str(self._neighbors)
 
@@ -61,7 +90,6 @@ class Graph:
         This function draws the graph1 such that vertices that are part of the vertex cover are colored in green,
         otherwise in teal
         :param vertex_cover: a vertex cover
-        :return:
         """
         G = nx.Graph()
         for vertex in self._vertices:
@@ -79,6 +107,12 @@ class Graph:
         plt.show()
 
     def create_p_random_graph(self, num_vertices: int, p: float):
+        """
+        Updates the graph to a p-random graph with the given number of vertices and probability 0 <= p <= 1.
+        Each possible edge is added to the graph with probability p.
+        :param num_vertices: Number of vertices in the new graph.
+        :param p: Probability of each edge to be added.
+        """
         vertices = [i for i in range(num_vertices)]
         self._vertices = vertices
         self._num_vertices = num_vertices
@@ -97,10 +131,21 @@ class Graph:
         self._neighbors = neighbors
 
     def create_nx_graph(self, num_vertices: int, num_edges: int):
+        """
+        Updates the graph to a random graph with the number of vertices and edges given.
+        :param num_vertices: Number of vertices.
+        :param num_edges: Number of edges.
+        """
         g = nx.gnm_random_graph(num_vertices, num_edges)
         self.create_graph(num_vertices, g.edges)
 
     def create_graph(self, num_vertices: int, edges: List[Tuple[int, int]]):
+        """
+        Updates graph to a graph with given number of vertices and list of edges.
+        Converts the edges to the right format and creates the neighbours dictionary.
+        :param num_vertices: Number of vertices in the new graph.
+        :param edges: List of edges (tuples) in the new graph.
+        """
         vertices = [i for i in range(num_vertices)]
         new_edges = []
         neighbors = {}
@@ -117,6 +162,11 @@ class Graph:
         self._neighbors = neighbors
 
     def create_bad_greedy_graph(self, k: int):
+        """
+        updates the graph to a graph which is bad for Greedy Hill Climbing algorithm (especially for a deterministic approach),
+        as explained in the report.
+        :param k: Integer > 0 for the graph creation.
+        """
         factorial_k = factorial(k)
         vertices_lists = []
         num_vertices = 0
