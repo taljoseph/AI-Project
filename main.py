@@ -213,16 +213,16 @@ if __name__ == '__main__':
 #             li.append((i, len(vc6)))
 #         print(li)
 #         print(time.time() - start)
-    graph2 = Graph()
-    graph2.create_old_city_graph()
+#     graph2 = Graph()
+#     graph2.create_old_city_graph()
 
 
-    # graph2 = build_graph_from_file(".\\graph_files\\C250.9.mis")
+    graph2 = build_graph_from_file(".\\graph_files\\gen400_p0.9_65.mis")
     start4 = time.time()
-    vc4 = multirun_whc_weighted_vertices(graph2, 1)
+    vc4 = random_restart_vertices_weighted_hc(graph2, 100)
     time4 = time.time() - start4
     print("Weighted vertices new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph2, vc4), time4))
-
+    print(vc4)
     # start5 = time.time()
     # vc5 = ghc_weighted_vertices_old(graph2, [])
     # time5 = time.time() - start5

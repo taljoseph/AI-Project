@@ -15,8 +15,8 @@ class GraphNP:
         """
         :param neighbours_mtx: a list of the edges in the graph - (u,v)
         :param vertex_array: a list of the vertices in the graph
-        :param neighbors: a dictionary where the key is the number of a vertex, and the value is a set of vertex
-         neighbors
+        :param neighbours: a dictionary where the key is the number of a vertex, and the value is a set of vertex
+         neighbours
         """
         self._vertices = np.arange(num_vertices)
         self._neighbours_mtx = None
