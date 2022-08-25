@@ -33,7 +33,7 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     """
     # init
     cur_state = set(initial_state)
-    rest_vertices_set = set(graph.get_vertices()).difference(cur_state)
+    remaining_vertices_set = set(graph.get_vertices()).difference(cur_state)
     neighbors_dict = graph.get_neighbors()
 
     # adding neighbours
@@ -42,7 +42,7 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
     while len(edges_covered) < num_edges:
         best_vertices = []
         most_edges_added = -1
-        for v in rest_vertices_set:
+        for v in remaining_vertices_set:
             new_edges_added = len(neighbors_dict[v].difference(cur_state))
             if new_edges_added > most_edges_added:
                 best_vertices = [v]
@@ -51,7 +51,7 @@ def greedy_hill_climbing(graph: Graph, initial_state: List[int]) -> List[int]:
                 best_vertices.append(v)
         rand_vertex = random.choice(best_vertices)
         cur_state.add(rand_vertex)
-        rest_vertices_set.remove(rand_vertex)
+        remaining_vertices_set.remove(rand_vertex)
         edges_covered |= get_edges_covered_by_vertex(rand_vertex, neighbors_dict)
 
     # removing neighbours
@@ -175,6 +175,18 @@ def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
     return best_vc
 
 
+def random_restart_vertices_weighted_hc(graph: Graph, num_iters: int):
+    best_vc = []
+    len_of_best = math.inf
+    for i in range(num_iters):
+        init_state = create_random_initial_state(graph)
+        cur_vc = ghc_weighted_vertices(graph, init_state)
+        if len(cur_vc) < len_of_best:
+            best_vc = cur_vc
+            len_of_best = len(cur_vc)
+    return best_vc
+
+
 def ghc_weighted_edges(graph: Graph, num_iters) -> List[int]:
     """
     Calculates weights on edges, increasing the weight for each edge that isn't covered in the following round
@@ -215,7 +227,7 @@ def ghc_weighted_edges(graph: Graph, num_iters) -> List[int]:
             for edge in remaining_edges:
                 weights[edge] += 1
 
-        # removing neighbors
+        # removing neighbours
         valid_neighbor = True
         while valid_neighbor:
             worst_vertices = []
@@ -424,100 +436,9 @@ def ghc_weighted_vertices(graph: Graph, initial_state: List[int]):
             for neighbour in neighbours_in_state[best_vertex]:
                 neighbours_in_state[neighbour].remove(best_vertex)
             del neighbours_in_state[best_vertex]
+            weights = {}
     return state
 
-
-def ghc_weighted_vertices_old(graph: Graph, initial_state: List[int]):
-    state = set(initial_state)
-    neighbours = graph.get_neighbors()
-    edges = set(graph.get_edges())
-    remaining_edges = copy.deepcopy(edges) - get_edges_covered(initial_state, graph)
-    remaining_vertices = set(graph.get_vertices()) - state
-    weights = {vertex: 0 for vertex in remaining_vertices}
-
-    remaining_neighbours = {vertex: set() for vertex in remaining_vertices}
-    for edge in remaining_edges:
-        v1, v2 = edge
-        remaining_neighbours[v1].add(v2)
-        remaining_neighbours[v2].add(v1)
-
-    while remaining_edges:
-        for vertex in remaining_vertices:
-            if len(remaining_neighbours[vertex]) == 1:
-                v, = remaining_neighbours[vertex]
-                weights[v] = math.inf
-        # TODO put the below behind an if statement checking if max weight is not infinity
-        #  (because then calculation is pointless)
-        for vertex in remaining_vertices:
-            cur_score = 0
-            for neighbour in remaining_neighbours[vertex]:
-                max_val = -math.inf
-                min_val = math.inf
-                for n_o_n in remaining_neighbours[neighbour]:
-                    val = len(remaining_neighbours[n_o_n])
-                    if val > max_val:
-                        max_val = val
-                    if val < min_val:
-                        min_val = val
-                if len(remaining_neighbours[neighbour]) >= max_val:  # TODO maybe do average if equal
-                    cur_score += min_val
-                else:
-                    cur_score += max_val
-            weights[vertex] = cur_score
-        # best_vertex = max(weights, key=weights.get)
-        max_val = max(weights.values())
-        best_vertices = [k for k, v in weights.items() if v == max_val]
-        best_vertex = random.choice(best_vertices)
-        state.add(best_vertex)
-        weights[best_vertex] = 0
-        for neighbour in remaining_neighbours[best_vertex]:
-            remaining_neighbours[neighbour].remove(best_vertex)
-            remaining_edges.remove(frozenset({best_vertex, neighbour}))
-        del remaining_neighbours[best_vertex]
-        remaining_vertices.remove(best_vertex)
-
-    # Reduce vertex cover
-
-    weights = {}
-    can_reduce_cover = True
-    while can_reduce_cover:
-        # cur_best_score = math.inf
-        # cur_best_vertex = None
-        for vertex in state:
-            cant_remove_vertex = False
-            for neighbour in neighbours[vertex]:
-                if neighbour not in state:
-                    cant_remove_vertex = True
-                    break
-            if cant_remove_vertex:
-                continue
-            # can remove vertex, set its weights:
-            cur_score = 0
-            for neighbour in neighbours[vertex]:
-                max_val = -math.inf
-                min_val = math.inf
-                for n_o_n in neighbours[neighbour]:
-                    val = len(neighbours[n_o_n])
-                    if val > max_val:
-                        max_val = val
-                    if val < min_val:
-                        min_val = val
-                if len(neighbours[neighbour]) >= max_val:  # TODO maybe do average if equal
-                    cur_score += len(neighbours[neighbour])
-                else:
-                    cur_score += min(min_val, len(neighbours[neighbour]))
-            weights[vertex] = cur_score
-
-        if not weights:
-            can_reduce_cover = False
-        else:
-            best_vertex = max(weights, key=weights.get)
-            state.remove(best_vertex)
-            del weights[best_vertex]
-            for v in list(weights.keys()):
-                if v in neighbours[best_vertex]:
-                    del weights[v]
-    return state
 
 def multirun_whc_weighted_edges_2(graph: Graph, num_iters: int) -> List[int]:
     """
@@ -558,6 +479,8 @@ def create_random_initial_state(graph: Graph):
     """
     creates and returns a random initial state - random subsequence of the
     vertices in the graph
+    @param graph: A Graph object
+    @return: A random initial state
     """
     num_vertices_graph = graph.get_num_vertices()
     num_vertices_vc = random.randint(0, num_vertices_graph)
@@ -567,7 +490,9 @@ def create_random_initial_state(graph: Graph):
 def is_vc(graph: Graph, state: List[int]) -> bool:
     """
     This function checks if the state is the goal state - a vertex cover
-    return: True if goal state, otherwise false
+    @param graph: The Graph object in question
+    @param state: The state to check if it represents a goal state in the graph
+    @return: True if goal state, otherwise false
     """
     edges = graph.get_edges()
     vc = set(state)
@@ -578,12 +503,15 @@ def is_vc(graph: Graph, state: List[int]) -> bool:
     return True
 
 
-def get_edges_covered_by_vertex(v: int, neighbors: Dict[int, Set[int]]) -> Set[FrozenSet[int]]:
+def get_edges_covered_by_vertex(v: int, neighbours: Dict[int, Set[int]]) -> Set[FrozenSet[int]]:
     """
     This function returns a set of all edges covered by vertex v
+    @param v: The vertex in question
+    @param neighbours: The neighbours dictionary representing the neighbours of every vertex
+    @return: The edges covered by vertex v
     """
     edges_covered = set()
-    for u in neighbors[v]:
+    for u in neighbours[v]:
         edges_covered.add(frozenset({u, v}))
     return edges_covered
 
@@ -591,6 +519,9 @@ def get_edges_covered_by_vertex(v: int, neighbors: Dict[int, Set[int]]) -> Set[F
 def get_edges_covered(state: List[int], graph: Graph) -> Set[FrozenSet[int]]:
     """
     This function returns a set of all edges covered by the current state
+    @param state: The state in question
+    @param graph: The graph object
+    @return: A set of all edges in the graph covered in the state
     """
     edges_covered = set()
     for u in state:
@@ -600,19 +531,49 @@ def get_edges_covered(state: List[int], graph: Graph) -> Set[FrozenSet[int]]:
 
 
 def cost4(num_edges_covered, num_vertices_state, num_edges):
+    """
+    Cost function number 4: 2*|E'|-|V'| where E' = edges covered, V' = vertices in cover.
+    @param num_edges_covered: Number of edges covered by the vertices
+    @param num_vertices_state: number of the vertices in the state (in the vc)
+    @param num_edges: number of edges in the graph
+    @return: Value of the cost function as explained above
+    """
     return 2 * num_edges_covered - num_vertices_state
 
 
 def cost5(num_edges_covered, num_vertices_state, num_edges):
+    """
+    Cost function number 5: |E'|-|V'| where E' = edges covered, V' = vertices in cover
+    @param num_edges_covered: Number of edges covered by the vertices
+    @param num_vertices_state: number of the vertices in the state (in the vc)
+    @param num_edges: number of edges in the graph
+    @return: Value of the cost function as explained above
+    """
     return num_edges_covered - num_vertices_state
 
 
 def cost6(num_edges_covered, num_vertices_state, num_edges):
+    """
+    Cost function number 6: |E'|-|V'| - punishment, where E' = edges covered, V' = vertices in cover.
+    @param num_edges_covered: Number of edges covered by the vertices
+    @param num_vertices_state: number of the vertices in the state (in the vc)
+    @param num_edges: number of edges in the graph
+    @return: Value of the cost function as explained above
+    """
     punishment = 5 if num_edges > num_edges_covered else 0
     return num_edges_covered - num_vertices_state - punishment
 
 
 def simulated_annealing(graph: Graph, initial_state: List[int], schedule, cost):
+    """
+    This function finds a vertex cover using Simulated Annealing algorithm with the given schedule.
+    Given the nature of this algorithm, a VC isn't promised.
+    @param graph: The graph object
+    @param initial_state: The beginning state, usually empty
+    @param schedule: The schedule, i.e. temperature function
+    @param cost: The cost function
+    @return: The state the algorithm reached, hopefully reaching a VC.
+    """
     cur_state = set(initial_state)
     neighbors_dict = graph.get_neighbors()
     edges_covered = get_edges_covered(initial_state, graph)
@@ -625,14 +586,11 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule, cost):
 
     while True:
         T = schedule(t)
-        if T <= 0: # 1e-10:
+        if T <= 0:
             return list(cur_state) if best_sol is None else list(best_sol)
-        # if t % 10000 == 0:
-            # print(t)
         k = random.randint(0, num_vertices - 1)
         if k in cur_state:
             new_edges_covered = edges_covered.difference({frozenset({k, v}) for v in neighbors_dict[k] if v not in cur_state})
-            # new_val = len(new_edges_covered) * 2 - (len(cur_state) - 1)
             new_val = cost(len(new_edges_covered), len(cur_state) - 1, num_edges)
             p = 1
             if new_val < cur_state_val:
@@ -659,6 +617,12 @@ def simulated_annealing(graph: Graph, initial_state: List[int], schedule, cost):
 
 
 def local_beam_search(graph: Graph, k):
+    """
+    This function finds a vertex cover using Local Beam Search algorithm with k best states
+    @param graph: The graph object
+    @param k:
+    @return:
+    """
     k_states = []
     vertices = set(graph.get_vertices())
     for i in range(k):
