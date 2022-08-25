@@ -156,31 +156,19 @@ def first_choice_hill_climbing(graph: Graph, initial_state: List[int]) -> List[i
     return list(cur_state)
 
 
-def random_restart_hill_climbing(graph: Graph, num_iters: int) -> List[int]:
+def random_restart_hill_climbing(graph: Graph, num_iters: int, algorithm) -> List[int]:
     """
-    Finds a vertex cover using random restart hill climbing algorithm, works similarly to using the cost function
-    above.
+    Finds a vertex cover using random restart hill climbing algorithm
     @param graph: The graph object.
     @param num_iters: The number of iterations.
+    @param algorithm: Algorithm used with random restart.
     @return: A list of vertices representing a vertex cover.
     """
     best_vc = []
     len_of_best = math.inf
     for i in range(num_iters):
         init_state = create_random_initial_state(graph)
-        cur_vc = greedy_hill_climbing(graph, init_state)
-        if len(cur_vc) < len_of_best:
-            best_vc = cur_vc
-            len_of_best = len(cur_vc)
-    return best_vc
-
-
-def random_restart_vertices_weighted_hc(graph: Graph, num_iters: int):
-    best_vc = []
-    len_of_best = math.inf
-    for i in range(num_iters):
-        init_state = create_random_initial_state(graph)
-        cur_vc = ghc_weighted_vertices(graph, init_state)
+        cur_vc = algorithm(graph, init_state)
         if len(cur_vc) < len_of_best:
             best_vc = cur_vc
             len_of_best = len(cur_vc)
