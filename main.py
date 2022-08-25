@@ -3,6 +3,7 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import copy
+import csv
 
 from graph_numpy import *
 from Graph import *
@@ -13,7 +14,79 @@ from vc_problem import *
 import time
 from genetic_algorithms import *
 import networkx as nx
-from utils import  *
+from utils import *
+
+def run_for_user(algorithm: str, graph_type: str, iters: str):
+    if "prandom" in graph_type:
+        num_vertices, edges_ratio = graph_type.split("_")[1:]
+        graph = Graph()
+        graph.create_p_random_graph(int(num_vertices), float(edges_ratio))
+    elif "random" in graph_type:
+        num_vertices, num_edges = graph_type.split("_")[1:]
+        graph = Graph()
+        graph.create_nx_graph(int(num_vertices), int(num_edges))
+    else:
+        graph = build_graph_from_file(".\\graph_files\\" + graph_type)
+    algo_dict = {"two_approximate_vertex_cover": two_approximate_vertex_cover, "greedy_hill_climbing": greedy_hill_climbing,
+                "random_restart_hill_climbing": random_restart_hill_climbing, "ghc_weighted_edges": ghc_weighted_edges,
+                "ghc_weighted_vertices": ghc_weighted_vertices, "simulated_annealing": simulated_annealing,
+                "local_beam_search": local_beam_search, "stochastic_hill_climbing": stochastic_hill_climbing,
+                "RegularVC_GA": RegularVC_GA, "RegularVC_GA2": RegularVC_GA2, "VCPunish_GA": VCPunish_GA}
+    iterations = int(iters)
+    f = open(".\\RESULTS.csv", 'w')
+    writer = csv.writer(f)
+    writer.writerow(["Algo Name", "VC size"])
+    if algorithm == "all":
+        run_for_user_helper(algorithm, graph, iterations, f)
+    else:
+        run_for_user_helper(algo_dict[algorithm], graph, iterations, f)
+    f.close()
+
+
+def run_for_user_helper(algorithm, graph: Graph, iters: int, file):
+
+    if algorithm == two_approximate_vertex_cover:
+        run_iter_times(algorithm, [graph], iters, algorithm.__name__, file)
+
+    elif algorithm == greedy_hill_climbing or algorithm == ghc_weighted_vertices or algorithm == stochastic_hill_climbing:
+        run_iter_times(algorithm, [graph, []], iters, algorithm.__name__, file)
+
+    elif algorithm == random_restart_hill_climbing or algorithm == ghc_weighted_edges:
+        run_iter_times(algorithm, [graph, 100], iters, algorithm.__name__, file)
+
+    elif algorithm == simulated_annealing:
+        run_iter_times(algorithm, [graph, [], lambda x: 1 - 0.00001 * x, cost4], iters, algorithm.__name__, file)
+
+    elif algorithm == local_beam_search:
+        run_iter_times(algorithm, [graph, 25], iters, algorithm.__name__, file)
+
+    elif algorithm == RegularVC_GA or algorithm == RegularVC_GA2 or algorithm == VCPunish_GA:
+        ga_graph = algorithm(graph)
+        run_iter_times(None, [10000, round((0.315 * (graph.get_num_vertices() ** 0.6) + 0.72))], iters,
+                       algorithm.__name__, file, ga_graph)
+
+    elif algorithm == "all":
+        all_algo = [two_approximate_vertex_cover, greedy_hill_climbing, random_restart_hill_climbing,
+                    ghc_weighted_edges, ghc_weighted_vertices, simulated_annealing, local_beam_search,
+                    stochastic_hill_climbing, RegularVC_GA, RegularVC_GA2, VCPunish_GA]
+        for alg in all_algo:
+            run_for_user_helper(alg, graph, iters, file)
+    else:
+        print("Invalid algorithm provided")
+        return
+
+def run_iter_times(algo, params, iters, algo_name, file, ga_graph=None ):
+    writer = csv.writer(file)
+    results = ""
+    for i in range(iters):
+        if ga_graph is not None:
+            vc = ga_graph.perform_ga(*params)
+        else:
+            vc = algo(*params)
+        results += str(len(vc)) + " ,"
+
+    writer.writerow([algo_name, results])
+
 
 def create_random_graph(num_of_vertices):
     """
@@ -39,6 +112,7 @@ def create_random_graph(num_of_vertices):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    run_for_user("all", "C125.9.mis", "2")
     # new_graph = create_random_graph(10)
     # new_graph = Graph()
     # new_graph.create_p_random_graph(100, 0.05)
@@ -64,9 +138,9 @@ if __name__ == '__main__':
     # graph1.draw_vertex_cover(b)
     # problem = VC_Problem(graph1, [1, 2])
 
-    num_vertices = 500
-    graph1 = Graph()
-    graph1.create_p_random_graph(num_vertices, 0.0035)
+    # num_vertices = 500
+    # graph1 = Graph()
+    # graph1.create_p_random_graph(num_vertices, 0.0035)
     # graph1.create_nx_graph(200, math.ceil(19900 * 0.20))
 
 
@@ -215,15 +289,23 @@ if __name__ == '__main__':
 #         print(time.time() - start)
 #     graph2 = Graph()
 #     graph2.create_old_city_graph()
+#
+#
+#     # graph2 = build_graph_from_file(".\\graph_files\\C250.9.mis")
+#     start4 = time.time()
+#     vc4 = multirun_whc_weighted_vertices(graph2, 1)
+#     time4 = time.time() - start4
+#     print("Weighted vertices new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph2, vc4), time4))
 
-
-    graph2 = build_graph_from_file(".\\graph_files\\gen400_p0.9_65.mis")
-    start4 = time.time()
-    vc4 = random_restart_vertices_weighted_hc(graph2, 100)
-    time4 = time.time() - start4
-    print("Weighted vertices new:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc4), is_vc(graph2, vc4), time4))
-    print(vc4)
     # start5 = time.time()
     # vc5 = ghc_weighted_vertices_old(graph2, [])
     # time5 = time.time() - start5
     # print("Weighted vertices old:\nNum vertices: {}\nis_cover: {}\ntime(sec): {}\n".format(len(vc5), is_vc(graph2, vc5), time5))
+    # bla = "p_random_10_0.004"
+    # if "p_random" in bla:
+    #     print("hi")
+    #
+    # print(bla.split("_")[2:])
+    # graph = Graph()
+    # graph.create_nx_graph(40, 30)
+    # print(graph)
