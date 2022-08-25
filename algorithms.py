@@ -1,7 +1,5 @@
 import copy
-from genetic_algorithms import *
-from Graph import *
-from utils import create_random_initial_state, is_vc, get_edges_covered_by_vertex, get_edges_covered
+from utils import *
 
 
 def two_approximate_vertex_cover(graph: Graph) -> List[int]:

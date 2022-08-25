@@ -1,5 +1,5 @@
 import csv
-from utils import *
+from algorithms import *
 import sys
 
 
@@ -90,7 +90,7 @@ def run_iter_times(algo, params, iters, algo_name, file, ga_graph=None):
     :param ga_graph: In case of GA
     """
     writer = csv.writer(file)
-    results = ""
+    results = []
     min_vc_size = float("inf")
     min_vc = []
     for i in range(iters):
@@ -101,30 +101,9 @@ def run_iter_times(algo, params, iters, algo_name, file, ga_graph=None):
         if len(vc) < min_vc_size:
             min_vc_size = len(vc)
             min_vc = vc
-        results += str(len(vc)) + " ,"
+        results.append(len(vc))
 
     writer.writerow([algo_name, results, min_vc])
-
-
-def create_random_graph(num_of_vertices):
-    """
-    This function creates a random graph
-    :param num_of_vertices: The amount of vertices in the graph
-    :return: a Graph object
-    """
-    vertex_list = []
-    for i in range(num_of_vertices):
-        vertex_list.append(i)
-    all_possible_edges = [frozenset({i, j}) for i in range(len(vertex_list) - 1) for j in range(i + 1, len(vertex_list))]
-    edges_list = random.sample(all_possible_edges, random.randint(1, len(all_possible_edges)))
-    neighbors = dict()
-    for vertex in vertex_list:
-        vertex_neighbors = set()
-        for edge in edges_list:
-            if vertex in edge:
-                vertex_neighbors |= edge.difference({vertex})
-        neighbors[vertex] = vertex_neighbors
-    return Graph(edges_list, vertex_list, neighbors)
 
 
 if __name__ == '__main__':
