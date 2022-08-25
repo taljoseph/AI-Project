@@ -3,22 +3,21 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-from graph_numpy import *
-from Graph import *
 from algorithms import *
 from genetic_algorithms import *
-import random
 from vc_problem import *
 import time
 import glob
 from enum import Enum
 import xlsxwriter as xl
-import inspect
 import pandas as pd
 import openpyxl
 
 
 class Algorithm(Enum):
+    """
+    Type of algorithm Enum
+    """
     TWO_APPROX = 1  # graph
     HC = 2   # Hill Climbing: graph, initial state
     ITERATIVE = 3  # Iterative Hill Climbing: graph, num iterations
@@ -26,66 +25,78 @@ class Algorithm(Enum):
     LBS = 5  # Local Beam Search: graph, num children
     GA = 6  # Genetic Algorithms: num gens, population size
 
+
 class InitialState(Enum):
+    """
+    Type of starting state Enum
+    """
     EMPTY = 1
     FULL = 2
     RANDOM = 3
     TWO_APPROX_COVER = 4
 
 
-def create_plot(time_list: np.ndarray, vc_size_list: np.ndarray, is_vc_list: np.ndarray, iters: int, num_vertices: int):
-    time_list_avg = time_list / iters
-    vc_len_list_avg = vc_size_list / iters
-    is_vc_list_avg = is_vc_list / iters
-
-    algo_names = ["2-Approx", "ghc-weighted", "Greedy\nHill Climbing", "First Choice\nHill Climbing", "Random Restart\nHill Climbing",
-                  "Stochastic\nHill Climbing", "Local Beam\nSearch", "Simulated\nAnnealing", "Regular GA", "Punish GA"]
-
-    time_fig = plt.figure(figsize=(15, 10))
-    plt.bar(algo_names, time_list_avg)
-    plt.xlabel("Algorithms")
-    plt.ylabel("Average run time")
-    plt.title("Average run time of different algorithms\non graphs with " + str(num_vertices) + " vertices")
-    plt.show()
-
-    vc_len_fig = plt.figure(figsize=(15, 10))
-    plt.bar(algo_names, vc_len_list_avg)
-    plt.xlabel("Algorithms")
-    plt.ylabel("Average Vertex Cover size")
-    plt.title("Average Vertex Cover size of different algorithms\non graphs with " + str(num_vertices) + " vertices")
-    plt.show()
-
-    is_vc_fig = plt.figure(figsize=(15, 10))
-    plt.bar(algo_names, is_vc_list_avg)
-    plt.xlabel("Algorithms")
-    plt.ylabel("Average success rate")
-    plt.title("Average success rate of different algorithms\non graphs with " + str(num_vertices) + " vertices")
-    plt.show()
-
-
-def create_random_graph(num_of_vertices):
+def create_random_initial_state(graph: Graph):
     """
-    This function creates a random graph
-    :param num_of_vertices: The amount of vertices in the graph
-    :return: a Graph object
+    creates and returns a random initial state - random subsequence of the
+    vertices in the graph
+    @param graph: A Graph object
+    @return: A random initial state
     """
-    vertex_list = []
-    for i in range(num_of_vertices):
-        vertex_list.append(i)
-    all_possible_edges = [frozenset({i, j}) for i in range(len(vertex_list) - 1) for j in range(i + 1, len(vertex_list))]
-    edges_list = random.sample(all_possible_edges, random.randint(1, len(all_possible_edges)))
-    neighbors = dict()
-    for vertex in vertex_list:
-        vertex_neighbors = set()
-        for edge in edges_list:
-            if vertex in edge:
-                vertex_neighbors |= edge.difference({vertex})
-        neighbors[vertex] = vertex_neighbors
-    return Graph(edges_list, vertex_list, neighbors)
+    num_vertices_vc = random.randint(0, graph.get_num_vertices())
+    return random.sample(graph.get_vertices(), num_vertices_vc)
 
 
-def build_graph_from_file(file_name):
-    file = open(file_name, "r")
+def is_vc(graph: Graph, state: List[int]) -> bool:
+    """
+    This function checks if the state is the goal state - a vertex cover
+    @param graph: The Graph object in question
+    @param state: The state to check if it represents a goal state in the graph
+    @return: True if goal state, otherwise false
+    """
+    edges = graph.get_edges()
+    vc = set(state)
+    for edge in edges:
+        e = list(edge)
+        if e[0] not in vc and e[1] not in vc:
+            return False
+    return True
+
+
+def get_edges_covered_by_vertex(v: int, neighbours: Dict[int, Set[int]]) -> Set[FrozenSet[int]]:
+    """
+    This function returns a set of all edges covered by vertex v
+    @param v: The vertex in question
+    @param neighbours: The neighbours dictionary representing the neighbours of every vertex
+    @return: The edges covered by vertex v
+    """
+    edges_covered = set()
+    for u in neighbours[v]:
+        edges_covered.add(frozenset({u, v}))
+    return edges_covered
+
+
+def get_edges_covered(state: List[int], graph: Graph) -> Set[FrozenSet[int]]:
+    """
+    This function returns a set of all edges covered by the current state
+    @param state: The state in question
+    @param graph: The graph object
+    @return: A set of all edges in the graph covered in the state
+    """
+    edges_covered = set()
+    for u in state:
+        for u_neighbor in graph.get_neighbors()[u]:
+            edges_covered.add(frozenset({u, u_neighbor}))
+    return edges_covered
+
+
+def build_graph_from_file(file_path):
+    """
+    Builds a graph from an mis file
+    @param file_path: The path of the graph file
+    @return: The graph created
+    """
+    file = open(file_path, "r")
     first_line = file.readline().split()
     num_of_vertices = int(first_line[2])
     edges = []
@@ -95,25 +106,40 @@ def build_graph_from_file(file_name):
             edges.append((int(line[1]) - 1, int(line[2]) - 1))
     graph = Graph()
     graph.create_graph(num_of_vertices, edges)
-    print("finish graph build")
     file.close()
     return graph
 
 
 def create_random_graph_file(num_vertices, num_edges, path):
-    nx_graph = nx.gnm_random_graph(num_vertices, num_edges)
+    """
+    Creates an mis graph file for a random graph
+    @param num_vertices: Number of vertices
+    @param num_edges: Number of edges
+    @param path: Path to save the file to
+    """
     g = Graph()
-    g.create_graph(num_vertices, nx_graph.edges)
+    g.create_nx_graph(num_vertices, num_edges)
     create_graph_file(g, path)
 
 
-def create_p_random_graph_file(num_vertices, edges_ratio, path):
+def create_p_random_graph_file(num_vertices, p, path):
+    """
+    Creates an mis graph file for a p-random graph
+    @param num_vertices: Number of vertices
+    @param p: The probability for each edge
+    @param path: Path to save the file to
+    """
     g = Graph()
-    g.create_p_random_graph(num_vertices, edges_ratio)
+    g.create_p_random_graph(num_vertices, p)
     create_graph_file(g, path)
 
 
 def create_graph_file(graph, path):
+    """
+    Creates an mis graph file
+    @param graph: The graph to create a file for
+    @param path: The path to save to
+    """
     f = open(path, "w")
     f.write("p edge {} {}\n".format(graph.get_num_vertices(), graph.get_num_edges()))
     for edge in graph.get_edges():
@@ -125,6 +151,17 @@ def create_graph_file(graph, path):
 def run_algorithm_on_graph(params, num_iter: int, algorithm_type: Algorithm,
                            algorithm, initial_state: InitialState = InitialState.EMPTY,
                            run_hill_climbing=False, num_vert_start=0):
+    """
+    Runs the requested algorithm over a graph
+    @param params: The paramters required to run the algorithm
+    @param num_iter: Number of iterations
+    @param algorithm_type: The type of the algorithm as specified above
+    @param algorithm: The algorithm function
+    @param initial_state: The beginning state
+    @param run_hill_climbing: Run Hill Climbing if true
+    @param num_vert_start: Number of vertices in the beginning state
+    @return: A list containing the algorithm's name, average vc size, minimum vc size, average run time
+    """
     total_time = 0
     min_vc = math.inf
     total_vc_size = 0
@@ -137,9 +174,7 @@ def run_algorithm_on_graph(params, num_iter: int, algorithm_type: Algorithm,
         rel_params = params[1:]
     for j in range(num_iter):
         if initial_state == InitialState.RANDOM:
-            num_vert = random.randint(0, params[0].get_num_vertices())
-            new_state = random.sample(params[0].get_vertices(), num_vert)
-            rel_params[1] = new_state
+            rel_params[1] = create_random_initial_state(params[0])
         elif initial_state == InitialState.TWO_APPROX_COVER:
             new_state = random.sample(params[0].get_vertices(), num_vert_start)
             rel_params[1] = new_state
@@ -160,39 +195,54 @@ def run_algorithm_on_graph(params, num_iter: int, algorithm_type: Algorithm,
 
 
 def get_time_and_state(func, params):
+    """
+    Runs the function func with its parameters and calculates the run time
+    @param func: The function to run
+    @param params: The parameters relevant to the function
+    @return: The vertex cover and the run time
+    """
     start_time = time.time()
     vc = func(*params)
     end_time = time.time()
     return vc, end_time - start_time
 
 
-def xl1(graph_name: str, graph):
+def create_results_files(graph_name: str, graph, init_state: InitialState, start_vertices=0):
+    """
+    Runs the algorithms on the graph file and prints the results to an Excel file
+    @param graph_name: The name of the graph
+    @param graph: The graph object
+    @param init_state: The beginning state
+    @param start_vertices: Number of vertices to start with in the relevant algroithms
+    """
     column_names = ["Algorithm Name", "Avg VC Size", "Min VC Size", "Avg Run Time (sec)"]
     workbook = xl.Workbook(graph_name + ".xlsx")
     worksheet = workbook.add_worksheet()
-    init_state = InitialState.TWO_APPROX_COVER
     for i in range(len(column_names)):
         worksheet.write(0, i, column_names[i])
     results = []
     two_approx_vc = run_algorithm_on_graph([graph], 10, Algorithm.TWO_APPROX, two_approximate_vertex_cover)
-    start_vertices = two_approx_vc[2] // 2
+    if init_state == InitialState.TWO_APPROX_COVER:
+        start_vertices = two_approx_vc[2] // 2
     results.append(run_algorithm_on_graph([graph, []], 10, Algorithm.HC, greedy_hill_climbing,
                                           init_state, run_hill_climbing=False, num_vert_start=start_vertices))
     results.append(run_algorithm_on_graph([graph, []], 10, Algorithm.HC, stochastic_hill_climbing,
                                           init_state, run_hill_climbing=False, num_vert_start=start_vertices))
-    # # results.append(run_algorithm_on_graph([graph, []], 2, Algorithm.HC, first_choice_hill_climbing, InitialState.EMPTY))
-    # results.append(run_algorithm_on_graph([graph, 100], 10, Algorithm.ITERATIVE, random_restart_hill_climbing, InitialState.RANDOM))
+    results.append(run_algorithm_on_graph([graph, 100], 10, Algorithm.ITERATIVE, random_restart_hill_climbing))
     results.append(run_algorithm_on_graph([graph, [], lambda x: 1 - 0.00001 * x, cost4], 10, Algorithm.SA,
-                                          simulated_annealing, init_state, run_hill_climbing=True, num_vert_start=start_vertices))
-    # results.append(run_algorithm_on_graph([graph, 25], 10, Algorithm.LBS, local_beam_search, InitialState.RANDOM))
-    # results.append(run_algorithm_on_graph([graph, 100], 1, Algorithm.ITERATIVE, ghc_weighted_edges, InitialState.EMPTY))
+                                          simulated_annealing, init_state, run_hill_climbing=True,
+                                          num_vert_start=start_vertices))
+    results.append(run_algorithm_on_graph([graph, 25], 10, Algorithm.LBS, local_beam_search))
+    results.append(run_algorithm_on_graph([graph, 100], 1, Algorithm.ITERATIVE, ghc_weighted_edges))
     results.append(run_algorithm_on_graph([graph, []], 10, Algorithm.HC, ghc_weighted_vertices,
                                           init_state, run_hill_climbing=False, num_vert_start=start_vertices))
-    # # results.append(run_algorithm_on_graph([graph, 10], 2, Algorithm.ITERATIVE, random_restart_whc_special2, InitialState.EMPTY))
-    # results.append(run_algorithm_on_graph([graph, 10000, round((0.315 * (graph.get_num_vertices() ** 0.6) + 0.72))], 10, Algorithm.GA, RegularVC_GA, InitialState.RANDOM, True))
-    # results.append(run_algorithm_on_graph([graph, 10000, round((0.315 * (graph.get_num_vertices() ** 0.6) + 0.72))], 10, Algorithm.GA, RegularVC_GA2, InitialState.RANDOM, True))
-    # results.append(run_algorithm_on_graph([graph, 10000, round((0.315 * (graph.get_num_vertices() ** 0.6) + 0.72))], 10, Algorithm.GA, VCPunish_GA, InitialState.RANDOM, True))
-    # # results.append(run_algorithm_on_graph([graph, 10000, math.ceil((graph.get_num_vertices() ** 0.6) / 3)], 2, Algorithm.GA, VC_NEW_MUT, InitialState.RANDOM, True))
+
+    results.append(run_algorithm_on_graph([graph, 10000, get_population_size(graph.get_num_vertices())], 10,
+                                          Algorithm.GA, RegularVC_GA, InitialState.EMPTY, run_hill_climbing=True))
+    results.append(run_algorithm_on_graph([graph, 10000, get_population_size(graph.get_num_vertices())], 10,
+                                          Algorithm.GA, RegularVC_GA2, InitialState.EMPTY, run_hill_climbing=True))
+    results.append(run_algorithm_on_graph([graph, 10000, get_population_size(graph.get_num_vertices())], 10,
+                                          Algorithm.GA, VCPunish_GA, InitialState.EMPTY, run_hill_climbing=True))
     row = 1
     for result in results:
         for i in range(len(result)):
@@ -201,74 +251,27 @@ def xl1(graph_name: str, graph):
     workbook.close()
 
 
-def best_algo_graph(path):
+def get_population_size(num_vertices):
+    """
+    Gets the recommended population size based on the number of vertices
+    @param num_vertices: The number of vertices
+    @return: The recommended population size
+    """
+    return round((0.315 * (num_vertices ** 0.6) + 0.72))
+
+
+def algorithms_total_scores(path, column_name: str):
+    """
+    Calculates the scores of each algorithm over all results files
+    @param path: The path of the directory containing the graphs
+    @param column_name: The name of the column - Avg VC Size OR Min VC Size
+    @return: The scores
+    """
     files = glob.glob(path)
     sum_avg_values = np.zeros(4)
     for file in files:
         df = pd.read_excel(file)
-        a = df["Avg VC Size"]
+        a = df[column_name]
         a = a.to_numpy()
         sum_avg_values += a
     return sum_avg_values
-
-
-if __name__ == '__main__':
-    # graphs = ["gen400_p0.9_75.mis",
-    #           "gen400_p0.9_65.mis", "gen400_p0.9_55.mis", "gen200_p0.9_55.mis"]
-    # "p_hat300-2.mis", "p_hat300-3.mis", "MANN_a81.mis", "MANN_a45.mis",
-    #               "MANN_a27.mis", "keller4.mis", "hamming8-4.mis",
-    #
-    # i = 1000
-    # for graph in graphs:
-    #     g = build_graph_from_file(".\\graph_files\\" + graph)
-    #     xl1("{}".format(i), g)
-    #     i+=1
-    # g = Graph()
-    # g.create_old_city_graph()
-    # f = build_graph_from_file(".\\graph_files\\p_hat300-3.mis")
-    # xl1("sdkjhf", f)
-
-    # all_g = ["brock200_2.mis", "brock200_4.mis", "C125.9.mis", "C250.9.mis", "C500.9.mis", "gen200_p0.9_44.mis",
-    #          "gen200_p0.9_55.mis", "gen400_p0.9_55.mis", "gen400_p0.9_65.mis", "gen400_p0.9_75.mis",
-    #          "hamming8-4.mis", "keller4.mis", "MANN_a27.mis", "MANN_a45.mis", "MANN_a81.mis", "p_hat300-3.mis",
-    #          "p_hat300-2.mis"]
-    # for g in all_g:
-    #     graph = build_graph_from_file(".\\graph_files\\" + g)
-    #     xl1(g, graph)
-
-    # g1 = Graph()
-    # g1.create_p_random_graph(500, 0.006)
-    # g2 = Graph()
-    #
-    #
-    # f = open("C:\\Users\\talyo\\OneDrive\\Desktop\\AI-Project\\p-random_graph.txt", "w")
-    # f.write("p edge {} {}\n".format(g1.get_num_vertices(), g1.get_num_edges()))
-    # for edge in g1.get_edges():
-    #     v, u = edge
-    #     f.write("e {} {}\n".format(v, u))
-    # f.close()
-
-    # create_p_random_graph_file(500, 0.006, "C:\\Users\\talyo\\OneDrive\\Desktop\\AI-Project\\p_random_graph.txt")
-    # create_random_graph_file(500, 5000, "C:\\Users\\talyo\\OneDrive\\Desktop\\AI-Project\\random_graph.txt")
-
-    # g = build_graph_from_file(".\\p_random_graph.txt")
-    # f = build_graph_from_file(".\\random_graph.txt")
-    # xl1("p-random_graph", g)
-    # xl1("random_graph", f)
-    #
-    # h = Graph()
-    # h.create_old_city_graph()
-    # xl1("Old_City_Jerusalem", h)
-
-    print(best_algo_graph(".\\graphs - using empty state\*.xlsx"))
-    print(best_algo_graph(".\\graphs - using full state\*.xlsx"))
-    print(best_algo_graph(".\\graphs - using half two-approx\*.xlsx"))
-    print(best_algo_graph(".\\graphs - using random state\*.xlsx"))
-    # g = build_graph_from_file(".\\graph_files\\MANN_a45.mis")
-    # for i in range(5):
-    #     xl1("1000" + str(i), g)
-
-
-
-#     a = glob.glob(".\graph_files\*.mis")
-#     print(run_algorithm_on_files(a, 2, two_approximate_vertex_cover))

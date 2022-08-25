@@ -247,8 +247,9 @@ class VCPunish_GA(VC_GA):
                 state[ver] = 1
         return state
 
-##############################################################################################
-##### EXTRA IMPLEMENTATIONS ####
+########################################################################################
+#  EXTRAS ##############################################################################
+########################################################################################
 
 class RegularVC_GA3(VC_GA):
     def __init__(self, graph):
@@ -269,6 +270,7 @@ class RegularVC_GA3(VC_GA):
         num_vertices = self._graph.get_num_vertices()
         prob_array = np.random.binomial(1, 1/num_vertices, (num_vertices,))
         return np.where(prob_array, np.logical_not(state), state)
+
 
 class FixedSizeVCGA(VC_GA):
     def __init__(self, graph, k):
