@@ -51,7 +51,10 @@ def run_for_user_helper(algorithm, graph: Graph, iters: int, file):
     elif algorithm == greedy_hill_climbing or algorithm == ghc_weighted_vertices or algorithm == stochastic_hill_climbing:
         run_iter_times(algorithm, [graph, []], iters, algorithm.__name__, file)
 
-    elif algorithm == random_restart_hill_climbing or algorithm == ghc_weighted_edges:
+    elif algorithm == random_restart_hill_climbing:
+        run_iter_times(algorithm, [graph, 100, greedy_hill_climbing], iters, algorithm.__name__, file)
+
+    elif algorithm == ghc_weighted_edges:
         run_iter_times(algorithm, [graph, 100], iters, algorithm.__name__, file)
 
     elif algorithm == simulated_annealing:
