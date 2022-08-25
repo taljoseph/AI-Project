@@ -167,7 +167,6 @@ def random_restart_hill_climbing(graph: Graph, num_iters: int, algorithm) -> Lis
     best_vc = []
     len_of_best = math.inf
     for i in range(num_iters):
-
         init_state = create_random_initial_state(graph)
         cur_vc = algorithm(graph, init_state)
         if len(cur_vc) < len_of_best:
