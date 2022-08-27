@@ -308,7 +308,7 @@ def ghc_weighted_vertices(graph: Graph, initial_state: List[int]):
                 neighbours_in_state[neighbour].remove(best_vertex)
             del neighbours_in_state[best_vertex]
             weights = {}
-    return state
+    return list(state)
 
 
 def cost4(num_edges_covered, num_vertices_state, num_edges):
