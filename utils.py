@@ -4,7 +4,6 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
 from genetic_algorithms import *
-from vc_problem import *
 import glob
 import pandas as pd
 
